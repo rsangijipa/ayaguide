@@ -222,7 +222,6 @@ export default function AyahuascaSession() {
       engine.setMasterVolume(masterVolume);
     }
     setHasStarted(true);
-    setIsPlaying(true);
   };
 
   const exitExperience = () => {
