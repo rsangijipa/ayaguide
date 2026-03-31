@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Pause, Volume2, Music, Wind as WindIcon, CloudRain, Bird, Bell, ChevronRight, Settings2, Sparkles, LayoutGrid, Timer, LogOut, VolumeX, Droplets, Flame, TreePine, Moon, Clock } from 'lucide-react';
+import { Play, Pause, Volume2, Music, Wind as WindIcon, CloudRain, Bird, Bell, ChevronRight, Settings2, Sparkles, LayoutGrid, Timer, LogOut, VolumeX, Droplets, Flame, TreePine, Moon, Clock, Maximize2, Minimize2 } from 'lucide-react';
 import { getAudioEngine } from '@/lib/audio';
 import { MandalaCard } from '@/components/MandalaCard';
 import { AmbienceCanvas } from '@/components/AmbienceCanvas';
@@ -13,6 +13,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Plus, Save, Trash2, FolderHeart } from 'lucide-react';
 import { ToastContainer, showToast } from '@/components/Toast';
 import { BreathingGuide } from '@/components/BreathingGuide';
+import { TimerRadialMenu } from '@/components/TimerRadialMenu';
+import { SessionLayout } from '@/components/SessionLayout';
 
 const CHAKRAS = [
   { 
@@ -114,8 +116,15 @@ export default function AyahuascaSession() {
   const [isMounted, setIsMounted] = useState(false);
   const [showTimerPicker, setShowTimerPicker] = useState(false);
   const [breathingActive, setBreathingActive] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
-  useEffect(() => { setIsMounted(true); }, []);
+  useEffect(() => { 
+    setIsMounted(true); 
+    const handleResize = () => setIsMobile(window.innerWidth < 1024);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // R3: Keyboard Shortcuts
   useEffect(() => {
@@ -319,7 +328,7 @@ export default function AyahuascaSession() {
 
   return (
     <div 
-      className="min-h-screen h-screen bg-[#020202] text-white flex p-4 md:p-6 gap-4 md:gap-6 overflow-hidden font-sans selection:bg-white/10 relative"
+      className="min-h-screen h-screen bg-[#020202] text-white flex overflow-hidden font-sans selection:bg-white/10 relative"
       style={{
            // @ts-ignore
            "--chakra-primary": activeChakra.palette.primary,
@@ -350,193 +359,169 @@ export default function AyahuascaSession() {
 
       <audio ref={bellAudioRef} src="https://cdn.freesound.org/previews/15/15402_45941-lq.mp3" crossOrigin="anonymous" />
 
-      {/* 1. Left Sidebar Card */}
-      <AnimatePresence mode="wait">
-        {!isFullScreen && (
-          <motion.div
-            initial={{ x: -400, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: -400, opacity: 0 }}
-            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="h-full"
+      <SessionLayout
+        isFullScreen={isFullScreen}
+        isMobileProp={isMobile}
+        sidebar={
+          <Sidebar
+            chakras={CHAKRAS}
+            activeChakra={activeChakra}
+            isChakraOn={isChakraOn}
+            chakraVolume={chakraVolume}
+            onChakraVolumeChange={setChakraVolume}
+            onChakraToggle={(type) => {
+              if (type === 'on') {
+                setIsChakraOn(true);
+              } else {
+                setIsChakraOn(false);
+              }
+            }}
+            onChakraSelect={setActiveChakra}
+            ambientVolumes={ambientVolumes}
+            onAmbientVolumeChange={handleAmbientVolumeChange}
+            onClearAll={handleClearAll}
+            masterVolume={masterVolume}
+            onMasterVolumeChange={setMasterVolume}
+            savedTemplates={savedTemplates}
+            onSaveTemplate={saveCurrentTemplate}
+            onLoadTemplate={loadTemplate}
+            onDeleteTemplate={deleteTemplate}
+            isMobile={isMobile}
+          />
+        }
+        header={
+          <motion.header 
+            className="h-full w-full glass rounded-[24px] flex items-center justify-between px-4 md:px-8 relative overflow-hidden backdrop-blur-2xl border border-white/5 shadow-xl"
           >
-            <Sidebar
-              chakras={CHAKRAS}
-              activeChakra={activeChakra}
-              isChakraOn={isChakraOn}
-              chakraVolume={chakraVolume}
-              onChakraVolumeChange={setChakraVolume}
-              onChakraToggle={(type) => {
-                if (type === 'on') {
-                  setIsChakraOn(true);
-                } else {
-                  setIsChakraOn(false);
-                }
-              }}
-              onChakraSelect={setActiveChakra}
-              ambientVolumes={ambientVolumes}
-              onAmbientVolumeChange={handleAmbientVolumeChange}
-              onClearAll={handleClearAll}
-              masterVolume={masterVolume}
-              onMasterVolumeChange={setMasterVolume}
-              savedTemplates={savedTemplates}
-              onSaveTemplate={saveCurrentTemplate}
-              onLoadTemplate={loadTemplate}
-              onDeleteTemplate={deleteTemplate}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+            {/* Timer Trigger */}
+            <div className="flex items-center gap-3 md:gap-4 group cursor-pointer" onClick={() => setShowTimerPicker(true)}>
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="p-2 md:p-3 rounded-xl md:rounded-2xl bg-white/5 border border-white/10 group-hover:bg-white/10 group-hover:border-white/20 transition-all flex items-center justify-center text-white/40 group-hover:text-white/80"
+              >
+                <Clock className="w-5 h-5 md:w-6 md:h-6" />
+              </motion.div>
+              <div className="hidden md:block">
+                <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-white/30 group-hover:text-white/50 transition-colors">Ciclo de Sessão</p>
+                <p className="text-xs font-light text-white/60 tracking-wider group-hover:text-white/80 transition-colors">Ajustar Duração</p>
+              </div>
+            </div>
 
-      {/* 2. Main Area (Timer Top + Mandala Stage) */}
-      <div className="flex-1 flex flex-col gap-4 md:gap-6 relative z-10 transition-all duration-700">
-        
-        {/* 2a. Top Timer Card */}
-        <AnimatePresence>
-          {!isFullScreen && (
-            <motion.header 
-              initial={{ y: -100, opacity: 0 }} 
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: -100, opacity: 0 }}
-              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              className="h-20 w-full glass rounded-[24px] flex items-center justify-between px-4 md:px-8 shrink-0 border border-white/5 shadow-xl relative overflow-hidden backdrop-blur-2xl"
-            >
-              {/* Timer Picker Trigger */}
-              <div className="flex items-center gap-3 relative">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setShowTimerPicker(!showTimerPicker)}
-                  className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all"
+            <div className="flex items-center gap-2 md:gap-4">
+                <div 
+                  className="text-xl md:text-3xl font-extralight tracking-[0.2em] text-white/90 font-mono cursor-pointer hover:text-white transition-colors mr-2"
+                  onClick={() => setShowTimerPicker(true)}
                 >
-                  <Clock className="w-5 h-5 text-white/60" />
-                </motion.button>
-                <div className="hidden md:block">
-                  <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-white/40">Presença na Sessão</p>
-                  <p className="text-xs font-light text-white/60 tracking-wider">Continuidade Observada</p>
+                  {formatTime(timeLeft)}
                 </div>
 
-                {/* R1: Timer Picker Dropdown */}
-                <AnimatePresence>
-                  {showTimerPicker && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                      className="absolute top-full left-0 mt-3 p-2 rounded-2xl bg-black/70 backdrop-blur-2xl border border-white/10 shadow-2xl z-50 flex gap-1.5"
-                    >
-                      {TIMER_PRESETS.map(preset => (
-                        <motion.button
-                          key={preset.label}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => {
-                            setSessionDuration(preset.seconds);
-                            setTimeLeft(preset.seconds);
-                            setIsPlaying(false);
-                            setShowTimerPicker(false);
-                            showToast(`Timer: ${preset.label}`, '⏱️');
-                          }}
-                          className={`px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${
-                            sessionDuration === preset.seconds
-                              ? 'bg-white text-black shadow-md'
-                              : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white'
-                          }`}
-                        >
-                          {preset.label}
-                        </motion.button>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              <div className="flex items-center gap-4 md:gap-8">
-                 <div className="text-2xl md:text-3xl font-extralight tracking-[0.2em] text-white/90 font-mono">
-                   {formatTime(timeLeft)}
-                 </div>
-
-                 <motion.button
+                {/* Fullscreen Toggle */}
+                <motion.button
                   whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-                  onClick={() => setIsPlaying(!isPlaying)}
-                  className="w-12 h-12 rounded-full glass border border-white/10 flex items-center justify-center group relative overflow-hidden"
+                  onClick={() => setIsFullScreen(!isFullScreen)}
+                  className="w-10 h-10 md:w-12 md:h-12 rounded-full glass border border-white/10 flex items-center justify-center group relative overflow-hidden"
+                  title={isFullScreen ? "Sair da Tela Cheia" : "Modo Tela Cheia"}
                 >
                   <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <AnimatePresence mode="wait">
-                    {isPlaying ? (
-                      <motion.div key="pause" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}><Pause className="w-5 h-5 text-white fill-white" /></motion.div>
-                    ) : (
-                      <motion.div key="play" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}><Play className="w-5 h-5 text-white fill-white ml-0.5" /></motion.div>
-                    )}
-                  </AnimatePresence>
+                  {isFullScreen ? (
+                    <Minimize2 className="w-4 h-4 md:w-5 md:h-5 text-white/70" />
+                  ) : (
+                    <Maximize2 className="w-4 h-4 md:w-5 md:h-5 text-white/70" />
+                  )}
                 </motion.button>
-              </div>
 
-              <div className="flex items-center gap-3">
-                 {/* Breathing Guide Toggle */}
-                 <motion.button
-                   whileHover={{ scale: 1.05 }}
-                   whileTap={{ scale: 0.95 }}
-                   onClick={() => {
-                     setBreathingActive(!breathingActive);
-                     showToast(breathingActive ? 'Guia de respiração desativado' : 'Guia de respiração ativado (4-4-6)', breathingActive ? '💨' : '🌬️');
-                   }}
-                   className={`hidden md:flex w-10 h-10 rounded-full border items-center justify-center transition-all ${
-                     breathingActive
-                       ? 'bg-white/10 border-white/30 text-white/80'
-                       : 'bg-white/5 border-white/10 text-white/30 hover:text-white/60'
-                   }`}
-                   title="Guia de Respiração (B)"
-                 >
-                   <WindIcon className="w-4 h-4" />
-                 </motion.button>
+                <motion.button
+                whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+                onClick={() => setIsPlaying(!isPlaying)}
+                className="w-10 h-10 md:w-12 md:h-12 rounded-full glass border border-white/10 flex items-center justify-center group relative overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <AnimatePresence mode="wait">
+                  {isPlaying ? (
+                    <motion.div key="pause" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}><Pause className="w-4 h-4 md:w-5 md:h-5 text-white fill-white" /></motion.div>
+                  ) : (
+                    <motion.div key="play" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}><Play className="w-4 h-4 md:w-5 md:h-5 text-white fill-white ml-0.5" /></motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.button>
+            </div>
 
-                 <div className="hidden md:flex items-center gap-2 text-right">
-                   <div className="text-xs font-light text-white/60 tracking-wide">
-                     {activeChakra.name.split(' (')[0]}
-                   </div>
-                   <div className={`w-3 h-3 rounded-full ${activeChakra.color} shadow-[0_0_15px_currentColor]`} />
+            <div className="flex items-center gap-3">
+               {/* Breathing Guide Toggle */}
+               <motion.button
+                 whileHover={{ scale: 1.05 }}
+                 whileTap={{ scale: 0.95 }}
+                 onClick={() => {
+                   setBreathingActive(!breathingActive);
+                   showToast(breathingActive ? 'Guia de respiração desativado' : 'Guia de respiração ativado (4-4-6)', breathingActive ? '💨' : '🌬️');
+                 }}
+                 className={`hidden md:flex w-10 h-10 rounded-full border items-center justify-center transition-all ${
+                   breathingActive
+                     ? 'bg-white/10 border-white/30 text-white/80'
+                     : 'bg-white/5 border-white/10 text-white/30 hover:text-white/60'
+                 }`}
+                 title="Guia de Respiração (B)"
+               >
+                 <WindIcon className="w-4 h-4" />
+               </motion.button>
+
+               <div className="hidden md:flex items-center gap-2 text-right">
+                 <div className="text-xs font-light text-white/60 tracking-wide">
+                   {activeChakra.name.split(' (')[0]}
                  </div>
+                 <div className={`w-3 h-3 rounded-full ${activeChakra.color} shadow-[0_0_15px_currentColor]`} />
+               </div>
 
-                 {/* Exit Button */}
-                 <motion.button
-                   whileHover={{ scale: 1.1 }}
-                   whileTap={{ scale: 0.9 }}
-                   onClick={exitExperience}
-                   className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/30 hover:text-red-400 hover:border-red-400/30 hover:bg-red-400/5 transition-all"
-                   title="Sair da Sessão (Esc)"
-                 >
-                   <LogOut className="w-4 h-4" />
-                 </motion.button>
-              </div>
-              
-              <div className="absolute inset-0 bg-white/[0.02] -z-10" />
-            </motion.header>
-          )}
-        </AnimatePresence>
+               <motion.button
+                 whileHover={{ scale: 1.1 }}
+                 whileTap={{ scale: 0.9 }}
+                 onClick={exitExperience}
+                 className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/30 hover:text-red-400 hover:border-red-400/30 hover:bg-red-400/5 transition-all"
+                 title="Sair da Sessão (Esc)"
+               >
+                 <LogOut className="w-4 h-4" />
+               </motion.button>
+            </div>
+            
+            <div className="absolute inset-0 bg-white/[0.02] -z-10" />
+          </motion.header>
+        }
+        content={
+          <div className="w-full h-full flex items-center justify-center relative">
+            <MandalaCard
+              hue={activeChakra.hue}
+              isPlaying={isPlaying}
+              chakraId={activeChakra.id}
+              chakraColor={activeChakra.palette.primary}
+              chakraPalette={activeChakra.palette}
+              audioLevel={audioLevel}
+              ambientVolumes={ambientVolumes}
+              isFullScreen={isFullScreen}
+              onToggleFullScreen={() => setIsFullScreen(!isFullScreen)}
+            />
+            <BreathingGuide
+              isActive={breathingActive}
+              chakraColor={activeChakra.palette.primary}
+              onToggle={() => setBreathingActive(!breathingActive)}
+            />
+          </div>
+        }
+      />
 
-        {/* 2b. Central Mandala Card with Breathing Guide */}
-        <div className="flex-1 relative min-h-0 flex flex-col">
-          <MandalaCard
-            hue={activeChakra.hue}
-            isPlaying={isPlaying}
-            chakraId={activeChakra.id}
-            chakraColor={activeChakra.palette.primary}
-            chakraPalette={activeChakra.palette}
-            audioLevel={audioLevel}
-            ambientVolumes={ambientVolumes}
-            isFullScreen={isFullScreen}
-            onToggleFullScreen={() => setIsFullScreen(!isFullScreen)}
-          />
-          {/* V1: Breathing Guide overlay on mandala */}
-          <BreathingGuide
-            isActive={breathingActive}
-            chakraColor={activeChakra.palette.primary}
-            onToggle={() => setBreathingActive(!breathingActive)}
-          />
-        </div>
+      {/* Timer Radial Menu Overlay */}
+      <TimerRadialMenu
+        isOpen={showTimerPicker}
+        onClose={() => setShowTimerPicker(false)}
+        onSelect={(mins) => {
+          setSessionDuration(mins * 60);
+          setTimeLeft(mins * 60);
+          showToast(`Sessão definida: ${mins}m`, '⏲️');
+        }}
+        currentMinutes={sessionDuration / 60}
+        chakraColor={activeChakra.palette.primary}
+      />
 
-      </div>
 
       {/* R2: Fullscreen indicators + controls */}
       <AnimatePresence>
@@ -581,7 +566,15 @@ export default function AyahuascaSession() {
             >
               <WindIcon className="w-3.5 h-3.5" />
             </motion.button>
-            {/* Exit */}
+            {/* Exit FullScreen */}
+            <motion.button
+              whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+              onClick={() => setIsFullScreen(false)}
+              className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/70"
+            >
+              <Minimize2 className="w-3.5 h-3.5" />
+            </motion.button>
+            {/* Exit Experience */}
             <motion.button
               whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
               onClick={exitExperience}
@@ -662,26 +655,28 @@ export default function AyahuascaSession() {
               <div className="mb-10 relative inline-block landing-float">
                 <div className="absolute inset-0 bg-purple-400/20 blur-[60px] rounded-full scale-[2.5]" />
                 <div className="relative">
-                  <svg width="80" height="80" viewBox="0 0 80 80" className="mx-auto text-white/80">
-                    <circle cx="40" cy="40" r="36" fill="none" stroke="currentColor" strokeWidth="0.5" opacity="0.3" />
-                    <circle cx="40" cy="40" r="28" fill="none" stroke="currentColor" strokeWidth="0.5" opacity="0.4" />
-                    <circle cx="40" cy="40" r="20" fill="none" stroke="currentColor" strokeWidth="0.5" opacity="0.5" />
-                    <circle cx="40" cy="40" r="12" fill="none" stroke="currentColor" strokeWidth="0.8" opacity="0.6" />
-                    <circle cx="40" cy="40" r="5" fill="currentColor" opacity="0.8" />
-                    {/* Petal shapes */}
-                    {Array.from({ length: 8 }).map((_, i) => {
-                      const angle = (i / 8) * Math.PI * 2;
-                      const x = 40 + Math.cos(angle) * 24;
-                      const y = 40 + Math.sin(angle) * 24;
-                      return <circle key={i} cx={x} cy={y} r="2" fill="currentColor" opacity="0.4" />;
-                    })}
-                    {Array.from({ length: 12 }).map((_, i) => {
-                      const angle = (i / 12) * Math.PI * 2;
-                      const x = 40 + Math.cos(angle) * 34;
-                      const y = 40 + Math.sin(angle) * 34;
-                      return <circle key={i} cx={x} cy={y} r="1.5" fill="currentColor" opacity="0.25" />;
-                    })}
-                  </svg>
+                  {isMounted && (
+                    <svg width="80" height="80" viewBox="0 0 80 80" className="mx-auto text-white/80">
+                      <circle cx="40" cy="40" r="36" fill="none" stroke="currentColor" strokeWidth="0.5" opacity="0.3" />
+                      <circle cx="40" cy="40" r="28" fill="none" stroke="currentColor" strokeWidth="0.5" opacity="0.4" />
+                      <circle cx="40" cy="40" r="20" fill="none" stroke="currentColor" strokeWidth="0.5" opacity="0.5" />
+                      <circle cx="40" cy="40" r="12" fill="none" stroke="currentColor" strokeWidth="0.8" opacity="0.6" />
+                      <circle cx="40" cy="40" r="5" fill="currentColor" opacity="0.8" />
+                      {/* Petal shapes */}
+                      {Array.from({ length: 8 }).map((_, i) => {
+                        const angle = (i / 8) * Math.PI * 2;
+                        const x = (40 + Math.cos(angle) * 24).toFixed(3);
+                        const y = (40 + Math.sin(angle) * 24).toFixed(3);
+                        return <circle key={i} cx={x} cy={y} r="2" fill="currentColor" opacity="0.4" />;
+                      })}
+                      {Array.from({ length: 12 }).map((_, i) => {
+                        const angle = (i / 12) * Math.PI * 2;
+                        const x = (40 + Math.cos(angle) * 34).toFixed(3);
+                        const y = (40 + Math.sin(angle) * 34).toFixed(3);
+                        return <circle key={i} cx={x} cy={y} r="1.5" fill="currentColor" opacity="0.25" />;
+                      })}
+                    </svg>
+                  )}
                 </div>
               </div>
               

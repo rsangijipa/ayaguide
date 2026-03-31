@@ -9,6 +9,7 @@ import {
   Sparkles,
   ChevronDown,
   Activity,
+  Volume2,
 } from 'lucide-react';
 import { ChakraCard } from './ChakraCard';
 import { ElementCard } from './ElementCard';
@@ -32,6 +33,7 @@ interface SidebarProps {
   onSaveTemplate: () => void;
   onLoadTemplate: (template: any) => void;
   onDeleteTemplate: (id: number) => void;
+  isMobile?: boolean;
 }
 
 export function Sidebar({
@@ -51,10 +53,12 @@ export function Sidebar({
   onSaveTemplate,
   onLoadTemplate,
   onDeleteTemplate,
+  isMobile = false,
 }: SidebarProps) {
   const [expandedSection, setExpandedSection] = useState<'chakras' | 'elements' | 'templates' | null>('chakras');
   const [expandedCategory, setExpandedCategory] = useState<string | null>('water');
   const [showAllElements, setShowAllElements] = useState(false);
+
 
   const activeCount = useMemo(() => {
     const chakraActive = isChakraOn ? 1 : 0;
@@ -76,73 +80,68 @@ export function Sidebar({
   };
 
   return (
-    <motion.aside
-      initial={{ x: -100, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      className="w-96 glass-sidebar rounded-[40px] p-6 flex flex-col gap-4 overflow-y-auto overflow-x-hidden z-20 shrink-0 shadow-2xl relative sidebar-scroll h-full"
-      style={{ background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%)' }}
+    <aside
+      className={`w-full flex flex-col gap-3 overflow-y-auto overflow-x-hidden shrink-0 relative sidebar-scroll h-full transition-all duration-700 ${isMobile ? 'bg-transparent' : 'glass-sidebar'}`}
+      style={{ 
+        background: isMobile ? 'transparent' : undefined,
+        fontSize: 'calc(var(--base-scale, 1) * 1rem)',
+        padding: 'calc(var(--base-scale, 1) * 1.5rem)'
+      }}
     >
+
       <div className="flex flex-col gap-4 mb-2">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-light tracking-widest uppercase mb-1">
-            Aya<span className="font-bold opacity-60">Guide</span>
-          </h1>
-          <p className="text-[10px] text-white/40 uppercase tracking-[0.4em] font-medium">Portal de Sessão Sagrada</p>
-        </div>
-        <motion.div animate={{ borderColor: activeCount > 0 ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.05)' }} className="flex flex-col gap-4 p-4 rounded-3xl bg-white/5 border border-white/5 backdrop-blur-xl">
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-xl md:text-2xl font-light tracking-widest uppercase">
+              Aya<span className="font-bold opacity-60">Guide</span>
+            </h1>
+            <p className="text-[9px] md:text-[10px] text-white/40 uppercase tracking-[0.4em] font-medium">Portal Sagrado</p>
+          </div>
+          <div className="h-4 w-px bg-white/10 mx-1" />
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
                <div className="relative">
-                  <Activity className={`w-4 h-4 ${activeCount > 0 ? 'text-green-400' : 'text-white/20'}`} />
-                  {activeCount > 0 && <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full animate-pulse" />}
+                  <Activity className={`w-3.5 h-3.5 ${activeCount > 0 ? 'text-green-400' : 'text-white/20'}`} />
+                  {activeCount > 0 && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />}
                </div>
-               <span className="text-[11px] font-medium tracking-wider uppercase text-white/60">Sessão Ativa</span>
-            </div>
-            <div className="flex items-center gap-3">
-               {activeCount > 0 && (
-                 <motion.button 
-                  initial={{ opacity: 0, scale: 0.8 }} 
-                  animate={{ opacity: 1, scale: 1 }} 
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={onClearAll}
-                  className="px-2 py-1 rounded-md bg-white/5 hover:bg-white/10 border border-white/5 text-[9px] uppercase tracking-widest text-white/40 hover:text-white/80 transition-all flex items-center gap-1.5"
-                 >
-                   <Trash2 className="w-2.5 h-2.5" /> Limpar
-                 </motion.button>
-               )}
-               <div className="flex items-center gap-1.5">
-                 <span className="text-xs font-mono font-bold text-white/80">{activeCount}</span>
-                 <span className="text-[9px] text-white/20 uppercase tracking-widest mt-0.5">Canais</span>
-               </div>
+               <span className="text-[10px] font-medium tracking-wider uppercase text-white/40">{activeCount > 0 ? 'Sessão Ativa' : 'Sessão Inativa'}</span>
             </div>
           </div>
+        </div>
 
-          <div className="space-y-2">
+        <motion.div animate={{ borderColor: activeCount > 0 ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.05)' }} className="flex flex-col gap-4 p-5 rounded-[24px] bg-white/5 border border-white/5 backdrop-blur-xl">
+          <div className="flex items-center justify-between w-full">
+            <span className="text-[10px] uppercase tracking-[0.25em] font-bold text-white/20">Controle Mestre</span>
+            {activeCount > 0 && (
+              <motion.button 
+                initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} 
+                whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                onClick={onClearAll}
+                className="px-2 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/10 text-[9px] uppercase tracking-widest text-red-400/80 transition-all flex items-center gap-1.5"
+              >
+                <Trash2 className="w-2.5 h-2.5" /> Limpar Todos
+              </motion.button>
+            )}
+          </div>
+
+          <div className="space-y-3">
             <div className="flex items-center justify-between px-1">
-              <span className="text-[9px] uppercase tracking-[0.2em] font-bold text-white/30">Volume Geral</span>
-              <span className="text-[10px] font-mono text-white/50">{Math.round(masterVolume * 100)}%</span>
+              <div className="flex items-center gap-2">
+                 <Volume2 className="w-4 h-4 text-white/30" />
+                 <span className="text-[11px] font-mono text-white/50">{Math.round(masterVolume * 100)}%</span>
+              </div>
+              <span className="text-[9px] text-white/20 uppercase tracking-widest font-mono mt-0.5">{activeCount} canais</span>
             </div>
             <div className="relative group/vol h-6 flex items-center">
               <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                value={masterVolume}
+                type="range" min="0" max="1" step="0.01" value={masterVolume}
                 onChange={(e) => onMasterVolumeChange(parseFloat(e.target.value))}
                 className="w-full h-1 bg-white/10 rounded-full appearance-none cursor-pointer accent-transparent focus:outline-none"
-                style={{
-                  background: `linear-gradient(to right, ${activeChakra.palette.primary} ${masterVolume * 100}%, rgba(255,255,255,0.1) ${masterVolume * 100}%)`
-                }}
+                style={{ background: `linear-gradient(to right, ${activeChakra.palette.primary} ${masterVolume * 100}%, rgba(255,255,255,0.1) ${masterVolume * 100}%)` }}
               />
               <div 
-                className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-white pointer-events-none transition-transform group-hover/vol:scale-110"
-                style={{ 
-                  left: `calc(${masterVolume * 100}% - 6px)`,
-                  backgroundColor: activeChakra.palette.primary,
-                  boxShadow: `0 0 10px ${activeChakra.palette.primary}`
-                }}
+                className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-white pointer-events-none transition-transform group-hover/vol:scale-110"
+                style={{ left: `calc(${masterVolume * 100}% - 8px)`, backgroundColor: activeChakra.palette.primary, boxShadow: `0 0 15px ${activeChakra.palette.primary}` }}
               />
             </div>
           </div>
@@ -268,6 +267,6 @@ export function Sidebar({
           </AnimatePresence>
         </div>
       </div>
-    </motion.aside>
+    </aside>
   );
 }

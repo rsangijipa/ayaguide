@@ -70,13 +70,15 @@ export function MandalaCard({
       initial={{ scale: 0.98, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       transition={{ duration: 0.8, ease: 'easeOut' }}
-      className={`flex-1 w-full relative overflow-hidden flex items-center justify-center p-4 md:p-8 rounded-[40px] border border-white/5 shadow-2xl transition-all duration-700 ${isFullScreen ? 'm-0' : ''}`}
+      className={`flex-1 w-full h-full relative flex items-center justify-center p-4 md:p-8 rounded-[40px] border border-white/5 shadow-2xl transition-all duration-700 ${isFullScreen ? 'm-0 rounded-none z-[60]' : 'z-10'}`}
       style={{ background: `linear-gradient(135deg, rgba(${rgbString}, 0.04) 0%, rgba(${rgbString}, 0.01) 50%, rgba(${rgbString}, 0.03) 100%)` }}
     >
       <motion.div className="absolute inset-0 pointer-events-none" animate={{ opacity: [0.1, 0.2, 0.1] }} transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }} style={{ background: `radial-gradient(circle at 30% 50%, rgba(${rgbString}, 0.1) 0%, transparent 50%)` }} />
       <motion.div className="absolute inset-0 pointer-events-none" animate={{ opacity: glowIntensity * 0.4 }} transition={{ duration: 0.1 }} style={{ background: `radial-gradient(circle at 50% 50%, rgba(${rgbString}, 0.2) 0%, transparent 60%)`, filter: `blur(${60 + glowIntensity * 40}px)` }} />
       
-      <div className="relative w-full h-full max-w-[90vh] aspect-square flex items-center justify-center z-10">
+      <div 
+        className="relative flex items-center justify-center z-10 w-full h-full max-w-full max-h-full"
+      >
         {/* Pulsing Smoky Halo - SOUND REACTIVE */}
         <motion.div 
           className="absolute inset-0 blur-[130px] pointer-events-none rounded-full" 
@@ -101,21 +103,6 @@ export function MandalaCard({
         
         <motion.div className="absolute inset-0 blur-[100px] opacity-10 pointer-events-none rounded-full" animate={{ scale: [1, 1.05, 1], opacity: [0.05, 0.15, 0.05] }} transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }} style={{ backgroundColor: chakraColor }} />
       </div>
-
-      {/* Full Screen Toggle Button - Discrete & Touch Friendly */}
-      <motion.button
-        whileHover={{ scale: 1.1, opacity: 1 }}
-        whileTap={{ scale: 0.9 }}
-        onClick={onToggleFullScreen}
-        className="absolute bottom-6 right-6 w-12 h-12 rounded-full border border-white/10 bg-white/5 backdrop-blur-md flex items-center justify-center z-50 text-white/40 hover:text-white transition-all shadow-xl"
-        title={isFullScreen ? "Sair da Tela Cheia" : "Modo Tela Cheia"}
-      >
-        {isFullScreen ? (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 14h6m0 0v6m0-6L3 21M20 10h-6m0 0V4m0 6l7-7"/></svg>
-        ) : (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6m0 0v6m0-6L14 10M9 21H3m0 0v-6m0 6l7-7"/></svg>
-        )}
-      </motion.button>
 
       <motion.div className="absolute inset-0 rounded-[40px] pointer-events-none" animate={{ opacity: glowIntensity * 0.2 }} transition={{ duration: 0.1 }} style={{ border: `1px solid rgba(${rgbString}, 0.1)`, boxShadow: `inset 0 0 50px rgba(${rgbString}, 0.05)` }} />
     </motion.div>

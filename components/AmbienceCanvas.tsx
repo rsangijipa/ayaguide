@@ -61,28 +61,32 @@ export function AmbienceCanvas({ volumes: v, chakraColor: cc }: AmbienceCanvasPr
   useEffect(() => {
     const bp = bpRef.current;
     if (bp.rain.length === 0) {
+      const isMobile = window.innerWidth < 768;
+      const pMult = isMobile ? 0.5 : 1; // Particle multiplier for mobile performance
+
       // Rain — 3 depth layers
-      for (let i = 0; i < 350; i++) {
-        const layer = i < 100 ? 0 : i < 250 ? 1 : 2; // far, mid, near
+      const rainCount = Math.floor(350 * pMult);
+      for (let i = 0; i < rainCount; i++) {
+        const layer = i < (rainCount * 0.3) ? 0 : i < (rainCount * 0.7) ? 1 : 2;
         bp.rain.push({ x: Math.random(), y: Math.random(), len: 0.008 + layer * 0.008 + Math.random() * 0.01, spd: 0.004 + layer * 0.004 + Math.random() * 0.005, layer, al: 0.15 + layer * 0.15 });
       }
       // Fire particles
-      for (let i = 0; i < 100; i++) bp.fire.push({ x: 0.2 + Math.random() * 0.6, y: 0.5 + Math.random() * 0.4, vx: (Math.random() - 0.5) * 0.003, vy: -(0.001 + Math.random() * 0.005), sz: 2 + Math.random() * 10, lf: Math.random(), ml: 0.5 + Math.random() * 0.5, hue: 5 + Math.random() * 35 });
+      for (let i = 0; i < Math.floor(100 * pMult); i++) bp.fire.push({ x: 0.2 + Math.random() * 0.6, y: 0.5 + Math.random() * 0.4, vx: (Math.random() - 0.5) * 0.003, vy: -(0.001 + Math.random() * 0.005), sz: 2 + Math.random() * 10, lf: Math.random(), ml: 0.5 + Math.random() * 0.5, hue: 5 + Math.random() * 35 });
       // Embers
-      for (let i = 0; i < 60; i++) bp.embers.push({ x: 0.15 + Math.random() * 0.7, y: 0.9 + Math.random() * 0.1, vx: (Math.random() - 0.5) * 0.002, vy: -(0.002 + Math.random() * 0.004), sz: 1 + Math.random() * 3, lf: Math.random(), ml: 0.8 + Math.random() * 0.4, hue: 15 + Math.random() * 25 });
-      // Birds — varied sizes for depth
-      for (let i = 0; i < 40; i++) bp.birds.push({ x: Math.random(), y: 0.05 + Math.random() * 0.6, vx: 0.0005 + Math.random() * 0.002, vy: (Math.random() - 0.5) * 0.0008, wp: Math.random() * Math.PI * 2, ws: 0.06 + Math.random() * 0.14, sz: 2 + Math.random() * 6, layer: Math.random() < 0.3 ? 0 : 1 });
-      // Leaves — multi-color
+      for (let i = 0; i < Math.floor(60 * pMult); i++) bp.embers.push({ x: 0.15 + Math.random() * 0.7, y: 0.9 + Math.random() * 0.1, vx: (Math.random() - 0.5) * 0.002, vy: -(0.002 + Math.random() * 0.004), sz: 1 + Math.random() * 3, lf: Math.random(), ml: 0.8 + Math.random() * 0.4, hue: 15 + Math.random() * 25 });
+      // Birds
+      for (let i = 0; i < Math.floor(40 * pMult); i++) bp.birds.push({ x: Math.random(), y: 0.05 + Math.random() * 0.6, vx: 0.0005 + Math.random() * 0.002, vy: (Math.random() - 0.5) * 0.0008, wp: Math.random() * Math.PI * 2, ws: 0.06 + Math.random() * 0.14, sz: 2 + Math.random() * 6, layer: Math.random() < 0.3 ? 0 : 1 });
+      // Leaves
       const leafColors = ['#4ade80', '#86efac', '#facc15', '#fb923c', '#a3a3a3'];
-      for (let i = 0; i < 60; i++) bp.leaves.push({ x: Math.random(), y: -0.1 - Math.random() * 0.5, vx: (Math.random() - 0.5) * 0.0015, vy: 0.0008 + Math.random() * 0.003, rot: Math.random() * Math.PI * 2, rs: (Math.random() - 0.5) * 0.04, sz: 3 + Math.random() * 7, color: leafColors[Math.floor(Math.random() * leafColors.length)] });
+      for (let i = 0; i < Math.floor(60 * pMult); i++) bp.leaves.push({ x: Math.random(), y: -0.1 - Math.random() * 0.5, vx: (Math.random() - 0.5) * 0.0015, vy: 0.0008 + Math.random() * 0.003, rot: Math.random() * Math.PI * 2, rs: (Math.random() - 0.5) * 0.04, sz: 3 + Math.random() * 7, color: leafColors[Math.floor(Math.random() * leafColors.length)] });
       // Fireflies
-      for (let i = 0; i < 100; i++) bp.fireflies.push({ x: Math.random(), y: Math.random(), sz: 1 + Math.random() * 3, ph: Math.random() * Math.PI * 2, sp: 0.015 + Math.random() * 0.06, vx: (Math.random() - 0.5) * 0.001, vy: (Math.random() - 0.5) * 0.001, blink: Math.random(), trail: 0 });
-      // Waves — multi-layer
-      for (let i = 0; i < 25; i++) bp.waves.push({ y: i / 25, ph: Math.random() * Math.PI * 2, spd: 0.008 + Math.random() * 0.018, amp: 0.015 + Math.random() * 0.04, fr: 2 + Math.random() * 5, layer: i % 3 });
-      // Spores (for forest)
-      for (let i = 0; i < 80; i++) bp.spores.push({ x: Math.random(), y: 0.3 + Math.random() * 0.7, vx: (Math.random() - 0.5) * 0.0006, vy: -(0.0003 + Math.random() * 0.001), sz: 1 + Math.random() * 2.5, ph: Math.random() * Math.PI * 2, sp: 0.01 + Math.random() * 0.04, al: 0.3 + Math.random() * 0.5 });
+      for (let i = 0; i < Math.floor(100 * pMult); i++) bp.fireflies.push({ x: Math.random(), y: Math.random(), sz: 1 + Math.random() * 3, ph: Math.random() * Math.PI * 2, sp: 0.015 + Math.random() * 0.06, vx: (Math.random() - 0.5) * 0.001, vy: (Math.random() - 0.5) * 0.001, blink: Math.random(), trail: 0 });
+      // Waves
+      for (let i = 0; i < Math.floor(25 * pMult); i++) bp.waves.push({ y: i / 25, ph: Math.random() * Math.PI * 2, spd: 0.008 + Math.random() * 0.018, amp: 0.015 + Math.random() * 0.04, fr: 2 + Math.random() * 5, layer: i % 3 });
+      // Spores
+      for (let i = 0; i < Math.floor(80 * pMult); i++) bp.spores.push({ x: Math.random(), y: 0.3 + Math.random() * 0.7, vx: (Math.random() - 0.5) * 0.0006, vy: -(0.0003 + Math.random() * 0.001), sz: 1 + Math.random() * 2.5, ph: Math.random() * Math.PI * 2, sp: 0.01 + Math.random() * 0.04, al: 0.3 + Math.random() * 0.5 });
       // Waterfall drops
-      for (let i = 0; i < 50; i++) bp.waterfallDrops.push({ x: 0.4 + Math.random() * 0.2, y: Math.random(), spd: 0.006 + Math.random() * 0.01, sz: 1 + Math.random() * 3, al: 0.2 + Math.random() * 0.5, vx: (Math.random() - 0.5) * 0.003 });
+      for (let i = 0; i < Math.floor(50 * pMult); i++) bp.waterfallDrops.push({ x: 0.4 + Math.random() * 0.2, y: Math.random(), spd: 0.006 + Math.random() * 0.01, sz: 1 + Math.random() * 3, al: 0.2 + Math.random() * 0.5, vx: (Math.random() - 0.5) * 0.003 });
     }
   }, []);
 
