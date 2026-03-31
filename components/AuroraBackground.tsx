@@ -35,6 +35,15 @@ export function AuroraBackground({ activeChakraHue, ambientVolumes, isPlaying }:
     };
   }, [isPlaying]);
 
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    setIsMobile(window.innerWidth < 768);
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Shift hue: water pushes toward blue (210), fire toward red (0), nature toward green (120)
   const waterLevel = ((ambientVolumes.water || 0) + (ambientVolumes.ocean || 0) + (ambientVolumes.waterfall || 0)) / 3;
   const fireLevel = ((ambientVolumes.fire || 0) + (ambientVolumes.lava || 0)) / 2;
@@ -52,22 +61,27 @@ export function AuroraBackground({ activeChakraHue, ambientVolumes, isPlaying }:
           transition: 'background 2s ease' 
         }} 
       />
-      <div 
-        className="aurora-layer w-[60vw] h-[60vw] -bottom-[30%] -right-[10%]" 
-        style={{ 
-          background: `radial-gradient(circle, hsla(${(auroraHue + 180) % 360}, 100%, 50%, ${auroraIntensity * 0.7}) 0%, transparent 70%)`, 
-          animationDelay: '-5s', 
-          transition: 'background 2s ease' 
-        }} 
-      />
-      <div 
-        className="aurora-layer w-[100vw] h-[100vw] top-[10%] left-[10%]" 
-        style={{ 
-          background: `radial-gradient(circle, hsla(${auroraHue}, 100%, 30%, ${auroraIntensity * 0.4}) 0%, transparent 80%)`, 
-          animationDuration: '30s', 
-          transition: 'background 2s ease' 
-        }} 
-      />
+      
+      {!isMobile && (
+        <>
+          <div 
+            className="aurora-layer w-[60vw] h-[60vw] -bottom-[30%] -right-[10%]" 
+            style={{ 
+              background: `radial-gradient(circle, hsla(${(auroraHue + 180) % 360}, 100%, 50%, ${auroraIntensity * 0.7}) 0%, transparent 70%)`, 
+              animationDelay: '-5s', 
+              transition: 'background 2s ease' 
+            }} 
+          />
+          <div 
+            className="aurora-layer w-[100vw] h-[100vw] top-[10%] left-[10%]" 
+            style={{ 
+              background: `radial-gradient(circle, hsla(${auroraHue}, 100%, 30%, ${auroraIntensity * 0.4}) 0%, transparent 80%)`, 
+              animationDuration: '30s', 
+              transition: 'background 2s ease' 
+            }} 
+          />
+        </>
+      )}
     </div>
   );
 }

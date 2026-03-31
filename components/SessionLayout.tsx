@@ -64,16 +64,16 @@ export function SessionLayout({
       <AnimatePresence mode="wait">
         {!isFullScreen && (
           <motion.div
-            initial={isMobile ? { y: '80%' } : { x: -400 }}
+            initial={isMobile ? { y: '100%', x: '-50%' } : { x: -400 }}
             animate={isMobile 
-              ? { y: isSidebarExpanded ? 0 : 'calc(100% - 100px)' } 
+              ? { x: '-50%', y: isSidebarExpanded ? 0 : 'calc(100% - 100px)' } 
               : { x: 0 }
             }
-            exit={isMobile ? { y: '100%' } : { x: -400 }}
+            exit={isMobile ? { y: '100%', x: '-50%' } : { x: -400 }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             className={`shrink-0 z-[100] ${
               isMobile 
-                ? 'fixed bottom-0 left-0 right-0 h-[80vh] glass rounded-t-[40px] shadow-[0_-20px_50px_rgba(0,0,0,0.5)] border-t border-white/10' 
+                ? 'fixed bottom-4 left-1/2 w-[calc(100%-32px)] max-w-[600px] h-[75vh] glass rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10' 
                 : 'w-[384px] h-full overflow-hidden'
             }`}
           >

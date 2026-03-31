@@ -176,7 +176,7 @@ export function NatureLayer({ register, unregister }: LayerProps) {
   useEffect(() => {
     const p = particles.current;
     const isMobile = window.innerWidth < 768;
-    const pMult = isMobile ? 0.5 : 1;
+    const pMult = isMobile ? 0.1 : 1;
 
     // Birds
     for (let i = 0; i < Math.floor(40 * pMult); i++) p.birds.push({ x: Math.random(), y: 0.05 + Math.random() * 0.6, vx: 0.0005 + Math.random() * 0.002, vy: (Math.random() - 0.5) * 0.0008, wp: Math.random() * Math.PI * 2, ws: 0.06 + Math.random() * 0.14, sz: 2 + Math.random() * 6, layer: Math.random() < 0.3 ? 0 : 1 });
@@ -325,7 +325,7 @@ export function WeatherLayer({ register, unregister }: LayerProps) {
         }
         p.rainSplash.forEach(sp => { sp.lf!++; const pg = sp.lf! / sp.ml!; ctx.globalAlpha = (1 - pg) * rv * 0.4 * (sp.al || 0.3); ctx.beginPath(); ctx.arc(sp.x! * w, sp.y * h, sp.sz! * (1 + pg * 3), 0, Math.PI * 2); ctx.fill(); });
         p.rainSplash = p.rainSplash.filter(sp => sp.lf! < sp.ml!);
-        if (p.rainSplash.length > 120) p.rainSplash = p.rainSplash.slice(-80); ctx.restore();
+        if (p.rainSplash.length > Math.floor(120 * pMult)) p.rainSplash = p.rainSplash.slice(-Math.floor(80 * pMult)); ctx.restore();
       }
 
       // Thunder

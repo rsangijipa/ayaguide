@@ -310,8 +310,12 @@ function AyahuascaSession() {
           >
             <div className="relative">
               <div 
-                 className="flex items-center gap-3 md:gap-4 group cursor-pointer" 
-                 onClick={() => setShowTimerPicker(!showTimerPicker)}
+                 className="flex items-center gap-3 md:gap-4 group cursor-pointer select-none" 
+                 onClick={(e) => {
+                   e.preventDefault();
+                   e.stopPropagation();
+                   setShowTimerPicker(!showTimerPicker);
+                 }}
               >
                 <motion.div
                   whileHover={{ scale: 1.05 }}
@@ -330,9 +334,10 @@ function AyahuascaSession() {
                 isOpen={showTimerPicker}
                 onClose={() => setShowTimerPicker(false)}
                 onSelect={(mins) => {
-                  console.log("Timer selected:", mins, "minutes");
-                  setSessionDuration(mins * 60);
-                  setTimeLeft(mins * 60);
+                  const newSeconds = mins * 60;
+                  console.log("Setting new session duration:", newSeconds, "seconds");
+                  setSessionDuration(newSeconds);
+                  setTimeLeft(newSeconds);
                   showToast(`Sessão definida: ${mins}m`, '⏲️');
                 }}
                 currentMinutes={sessionDuration / 60}
@@ -342,8 +347,12 @@ function AyahuascaSession() {
 
             <div className="flex items-center gap-2 md:gap-4">
                 <div 
-                  className="text-xl md:text-3xl font-extralight tracking-[0.2em] text-white/90 font-mono cursor-pointer hover:text-white transition-colors mr-2"
-                  onClick={() => setShowTimerPicker(!showTimerPicker)}
+                  className="text-xl md:text-3xl font-extralight tracking-[0.2em] text-white/90 font-mono cursor-pointer hover:text-white transition-colors mr-2 select-none"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowTimerPicker(!showTimerPicker);
+                  }}
                 >
                   {formatTime(timeLeft)}
                 </div>

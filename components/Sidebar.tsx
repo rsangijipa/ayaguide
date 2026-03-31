@@ -81,23 +81,23 @@ export function Sidebar({
 
   return (
     <aside
-      className={`w-full flex flex-col gap-3 overflow-y-auto overflow-x-hidden shrink-0 relative sidebar-scroll h-full transition-all duration-700 ${isMobile ? 'bg-transparent' : 'glass-sidebar'}`}
+      className={`w-full flex flex-col gap-3 overflow-y-auto overflow-x-hidden shrink-0 relative sidebar-scroll h-full transition-all duration-700 ${isMobile ? 'bg-transparent pb-10' : 'glass-sidebar'}`}
       style={{ 
         background: isMobile ? 'transparent' : undefined,
         fontSize: 'calc(var(--base-scale, 1) * 1rem)',
-        padding: 'calc(var(--base-scale, 1) * 1.5rem)'
+        padding: isMobile ? '1rem 0.5rem' : 'calc(var(--base-scale, 1) * 1.5rem)'
       }}
     >
 
-      <div className="flex flex-col gap-4 mb-2">
-        <div className="flex items-center gap-4">
+      <div className={`flex flex-col gap-4 mb-2 ${isMobile ? 'px-4' : ''}`}>
+        <div className="flex items-center justify-between gap-4 w-full px-2">
           <div className="flex flex-col gap-1">
             <h1 className="text-xl md:text-2xl font-light tracking-widest uppercase">
               Aya<span className="font-bold opacity-60">Guide</span>
             </h1>
             <p className="text-[9px] md:text-[10px] text-white/40 uppercase tracking-[0.4em] font-medium">Portal Sagrado</p>
           </div>
-          <div className="h-4 w-px bg-white/10 mx-1" />
+          <div className="h-4 w-px bg-white/10 mx-1 hidden md:block" />
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
                <div className="relative">
