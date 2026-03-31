@@ -98,6 +98,9 @@ export default function AyahuascaSession() {
   const [hasStarted, setHasStarted] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [savedTemplates, setSavedTemplates] = useState<any[]>([]);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => { setIsMounted(true); }, []);
 
   const freqDataRef = useRef(new Uint8Array(32));
 
@@ -441,32 +444,26 @@ export default function AyahuascaSession() {
               />
             </div>
 
-            {/* Floating Particle Dust — deterministic to avoid hydration mismatch */}
-            <div className="absolute inset-0 pointer-events-none overflow-hidden">
-              {Array.from({ length: 30 }).map((_, i) => {
-                // Deterministic pseudo-random based on index
-                const seed = (n: number) => {
-                  const x = Math.sin(n * 9301 + 49297) * 49297;
-                  return x - Math.floor(x);
-                };
-                const s = (offset: number) => seed(i * 7 + offset);
-                return (
+            {/* Floating Particle Dust — client-only to avoid hydration mismatch */}
+            {isMounted && (
+              <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                {Array.from({ length: 30 }).map((_, i) => (
                   <div
                     key={i}
                     className="landing-particle"
                     style={{
-                      left: `${5 + s(0) * 90}%`,
-                      bottom: `${-5 - s(1) * 10}%`,
-                      animationDelay: `${s(2) * 8}s`,
-                      animationDuration: `${6 + s(3) * 6}s`,
-                      width: `${1 + s(4) * 2}px`,
-                      height: `${1 + s(5) * 2}px`,
-                      opacity: 0.3 + s(6) * 0.5,
+                      left: `${5 + ((i * 31 + 7) % 90)}%`,
+                      bottom: `${-5 - (i % 10)}%`,
+                      animationDelay: `${(i * 1.7) % 8}s`,
+                      animationDuration: `${6 + (i * 1.3) % 6}s`,
+                      width: `${1 + (i % 3)}px`,
+                      height: `${1 + ((i + 1) % 3)}px`,
+                      opacity: 0.3 + ((i * 17) % 50) / 100,
                     }}
                   />
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            )}
 
             {/* Main Content */}
             <motion.div 
