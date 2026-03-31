@@ -1,105 +1,42 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Pause, Volume2, Music, Wind as WindIcon, CloudRain, Bird, Bell, ChevronRight, Settings2, Sparkles, LayoutGrid, Timer, LogOut, VolumeX, Droplets, Flame, TreePine, Moon, Clock, Maximize2, Minimize2 } from 'lucide-react';
-import { getAudioEngine } from '@/lib/audio';
+import { useState, useEffect, useRef } from 'react';
+import { 
+  getAudioEngine 
+} from '@/lib/audio';
 import { MandalaCard } from '@/components/MandalaCard';
 import { AmbienceCanvas } from '@/components/AmbienceCanvas';
-import { ChakraCard } from '@/components/ChakraCard';
 import { Sidebar } from '@/components/Sidebar';
-import { AudioPlayerGroup, AudioPlayerElement } from '@/components/AudioPlayer';
-import { AMBIENT_ELEMENTS } from '@/lib/ambientElements';
-import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Save, Trash2, FolderHeart } from 'lucide-react';
+import { AudioPlayerGroup } from '@/components/AudioPlayer';
 import { ToastContainer, showToast } from '@/components/Toast';
 import { BreathingGuide } from '@/components/BreathingGuide';
-import { TimerRadialMenu } from '@/components/TimerRadialMenu';
+import { TimerDropdown } from '@/components/TimerDropdown';
 import { SessionLayout } from '@/components/SessionLayout';
+import { StartOverlay } from '@/components/StartOverlay';
+import { AuroraBackground } from '@/components/AuroraBackground';
+import { SaveTemplateModal } from '@/components/SaveTemplateModal';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { CHAKRAS, AMBIENT_SOUNDS, LOOP_ELEMENTS, TIMER_PRESETS } from '@/lib/constants';
+import { motion, AnimatePresence } from 'motion/react';
+import { 
+  Plus, Save, Trash2, FolderHeart, Play, Pause, Clock, Maximize2, Minimize2, Wind as WindIcon, LogOut 
+} from 'lucide-react';
 
-const CHAKRAS = [
-  { 
-    id: 'root', 
-    name: 'Básico (Muladhara)', 
-    frequency: 396, 
-    hue: 0, 
-    color: 'bg-red-500',
-    palette: { primary: '#ef4444', secondary: '#f87171', accent: '#fca5a5', soft: 'rgba(239, 68, 68, 0.15)' }
-  },
-  { 
-    id: 'sacral', 
-    name: 'Sacral (Svadhisthana)', 
-    frequency: 417, 
-    hue: 30, 
-    color: 'bg-orange-400',
-    palette: { primary: '#fb923c', secondary: '#fdba74', accent: '#fed7aa', soft: 'rgba(251, 146, 60, 0.15)' }
-  },
-  { 
-    id: 'solar', 
-    name: 'Plexo Solar (Manipura)', 
-    frequency: 528, 
-    hue: 60, 
-    color: 'bg-yellow-400',
-    palette: { primary: '#facc15', secondary: '#fde047', accent: '#fef3c7', soft: 'rgba(250, 204, 21, 0.15)' }
-  },
-  { 
-    id: 'heart', 
-    name: 'Cardíaco (Anahata)', 
-    frequency: 639, 
-    hue: 120, 
-    color: 'bg-green-400',
-    palette: { primary: '#4ade80', secondary: '#86efac', accent: '#bbf7d0', soft: 'rgba(74, 222, 128, 0.15)' }
-  },
-  { 
-    id: 'throat', 
-    name: 'Laríngeo (Vishuddha)', 
-    frequency: 741, 
-    hue: 210, 
-    color: 'bg-blue-400',
-    palette: { primary: '#60a5fa', secondary: '#93c5fd', accent: '#bfdbfe', soft: 'rgba(96, 165, 250, 0.15)' }
-  },
-  { 
-    id: 'thirdeye', 
-    name: 'Frontal (Ajna)', 
-    frequency: 260, 
-    hue: 260, 
-    color: 'bg-indigo-400',
-    palette: { primary: '#818cf8', secondary: '#a5b4fc', accent: '#c7d2fe', soft: 'rgba(129, 140, 248, 0.15)' }
-  },
-  { 
-    id: 'crown', 
-    name: 'Coronário (Sahasrara)', 
-    frequency: 963, 
-    hue: 280, 
-    color: 'bg-purple-400',
-    palette: { primary: '#c084fc', secondary: '#d8b4fe', accent: '#e9d5ff', soft: 'rgba(192, 132, 252, 0.15)' }
-  },
-];
+export default function App() {
+  return (
+    <ErrorBoundary>
+      <AyahuascaSession />
+    </ErrorBoundary>
+  );
+}
 
-const AMBIENT_SOUNDS = AMBIENT_ELEMENTS;
-
-// Map AMBIENT_ELEMENTS to AudioPlayerElement format for the loop system
-const LOOP_ELEMENTS: AudioPlayerElement[] = AMBIENT_ELEMENTS.map(el => ({
-  id: el.id,
-  name: el.name,
-  url: el.url
-}));
-
-const TIMER_PRESETS = [
-  { label: '15m', seconds: 900 },
-  { label: '30m', seconds: 1800 },
-  { label: '1h', seconds: 3600 },
-  { label: '2h', seconds: 7200 },
-  { label: '4h', seconds: 14400 },
-];
-
-export default function AyahuascaSession() {
+function AyahuascaSession() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [sessionDuration, setSessionDuration] = useState(3600); // default 1h
   const [timeLeft, setTimeLeft] = useState(3600);
   const [activeChakra, setActiveChakra] = useState(CHAKRAS[3]); // Default Heart
   const [isChakraOn, setIsChakraOn] = useState(false);
   const [chakraVolume, setChakraVolume] = useState(0.5);
-  const [audioLevel, setAudioLevel] = useState(0);
   
   const [ambientVolumes, setAmbientVolumes] = useState<Record<string, number>>(
     Object.fromEntries(AMBIENT_SOUNDS.map(s => [s.id, 0]))
@@ -115,6 +52,7 @@ export default function AyahuascaSession() {
   const [savedTemplates, setSavedTemplates] = useState<any[]>([]);
   const [isMounted, setIsMounted] = useState(false);
   const [showTimerPicker, setShowTimerPicker] = useState(false);
+  const [showSaveModal, setShowSaveModal] = useState(false);
   const [breathingActive, setBreathingActive] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -126,11 +64,10 @@ export default function AyahuascaSession() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // R3: Keyboard Shortcuts
+  // Keyboard Shortcuts
   useEffect(() => {
     if (!hasStarted) return;
     const handler = (e: KeyboardEvent) => {
-      // Don't fire shortcuts when typing in inputs
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       switch (e.key) {
         case ' ':
@@ -168,8 +105,6 @@ export default function AyahuascaSession() {
     return () => window.removeEventListener('keydown', handler);
   }, [hasStarted, isFullScreen, masterVolume]);
 
-  const freqDataRef = useRef(new Uint8Array(32));
-
   // Sync Master Volume with Audio Engine
   useEffect(() => {
     const engine = getAudioEngine();
@@ -178,13 +113,15 @@ export default function AyahuascaSession() {
 
   // Persistence logic
   useEffect(() => {
-    const saved = localStorage.getItem('ayaguide-templates');
-    if (saved) setSavedTemplates(JSON.parse(saved));
+    try {
+      const saved = localStorage.getItem('ayaguide-templates');
+      if (saved) setSavedTemplates(JSON.parse(saved));
+    } catch (e) {
+      console.error("Failed to load templates from localStorage", e);
+    }
   }, []);
 
-  const saveCurrentTemplate = () => {
-    const name = prompt('Nome do Modelo Sagrado:');
-    if (!name) return;
+  const handleSaveTemplate = (name: string) => {
     const newTemplate = {
       id: Date.now(),
       name,
@@ -194,8 +131,13 @@ export default function AyahuascaSession() {
     };
     const updated = [...savedTemplates, newTemplate];
     setSavedTemplates(updated);
-    localStorage.setItem('ayaguide-templates', JSON.stringify(updated));
-    showToast('Modelo salvo com sucesso', '💾');
+    try {
+      localStorage.setItem('ayaguide-templates', JSON.stringify(updated));
+      showToast('Modelo salvo com sucesso', '💾');
+    } catch (e) {
+      console.error("Failed to save to localStorage", e);
+      showToast('Erro ao salvar no dispositivo', '❌');
+    }
   };
 
   const loadTemplate = (template: any) => {
@@ -212,7 +154,11 @@ export default function AyahuascaSession() {
   const deleteTemplate = (id: number) => {
     const updated = savedTemplates.filter(t => t.id !== id);
     setSavedTemplates(updated);
-    localStorage.setItem('ayaguide-templates', JSON.stringify(updated));
+    try {
+      localStorage.setItem('ayaguide-templates', JSON.stringify(updated));
+    } catch (e) {
+      console.error("Failed to update localStorage", e);
+    }
   };
 
   useEffect(() => {
@@ -231,7 +177,6 @@ export default function AyahuascaSession() {
           if (newTime <= 0) {
             setIsPlaying(false);
             showToast('Sessão concluída. Namastê 🙏', '🔔');
-            // Play final bell
             if (bellAudioRef.current) {
               bellAudioRef.current.currentTime = 0;
               bellAudioRef.current.volume = 0.8;
@@ -263,16 +208,7 @@ export default function AyahuascaSession() {
     } else {
       engine.stopChakra();
     }
-    
-    const getLevels = () => {
-      engine.getFrequencyData(freqDataRef.current);
-      setAudioLevel(freqDataRef.current.reduce((a, b) => a + b, 0) / 32 / 255);
-      requestAnimationFrame(getLevels);
-    };
-    if (isChakraOn || Object.values(ambientVolumes).some(v => v > 0)) {
-        requestAnimationFrame(getLevels);
-    }
-  }, [isChakraOn, activeChakra, chakraVolume, ambientVolumes, isPlaying]);
+  }, [isChakraOn, activeChakra, chakraVolume, ambientVolumes, isPlaying, hasStarted]);
 
   const handleAmbientVolumeChange = (id: string, vol: number) => {
     setAmbientVolumes(prev => ({ ...prev, [id]: vol }));
@@ -301,9 +237,7 @@ export default function AyahuascaSession() {
 
   const exitExperience = () => {
     const engine = getAudioEngine();
-    if (engine) {
-      engine.stopChakra();
-    }
+    if (engine) engine.stopChakra();
     setIsPlaying(false);
     setIsChakraOn(false);
     setChakraVolume(0.5);
@@ -314,17 +248,7 @@ export default function AyahuascaSession() {
     setBreathingActive(false);
   };
 
-  // Compute active element icons for fullscreen indicators
-  const activeElementIcons = AMBIENT_ELEMENTS.filter(el => (ambientVolumes[el.id] || 0) > 0);
-
-  // V2: Compute reactive aurora hue shift based on active elements
-  const waterLevel = ((ambientVolumes.water || 0) + (ambientVolumes.ocean || 0) + (ambientVolumes.waterfall || 0)) / 3;
-  const fireLevel = ((ambientVolumes.fire || 0) + (ambientVolumes.lava || 0)) / 2;
-  const natureLevel = ((ambientVolumes.forest || 0) + (ambientVolumes.birds || 0) + (ambientVolumes.leaves || 0)) / 3;
-  // Shift hue: water pushes toward blue (210), fire toward red (0), nature toward green (120)
-  const hueShift = waterLevel * 30 + fireLevel * -40 + natureLevel * 10;
-  const auroraHue = activeChakra.hue + hueShift;
-  const auroraIntensity = 0.15 + audioLevel * 0.15 + (waterLevel + fireLevel + natureLevel) * 0.05;
+  const activeElementIcons = AMBIENT_SOUNDS.filter(el => (ambientVolumes[el.id] || 0) > 0);
 
   return (
     <div 
@@ -337,19 +261,16 @@ export default function AyahuascaSession() {
            "--chakra-soft": activeChakra.palette.soft,
       } as any}
     >
-      {/* V2: Aurora reativa — shifts hue based on active elements */}
-      <div className="fixed inset-0 pointer-events-none z-[0] bg-[#020202]">
-        <div className="aurora-layer w-[80vw] h-[80vw] -top-[40%] -left-[20%]" style={{ background: `radial-gradient(circle, hsla(${auroraHue}, 100%, 50%, ${auroraIntensity}) 0%, transparent 70%)`, transition: 'background 2s ease' }} />
-        <div className="aurora-layer w-[60vw] h-[60vw] -bottom-[30%] -right-[10%]" style={{ background: `radial-gradient(circle, hsla(${(auroraHue + 180) % 360}, 100%, 50%, ${auroraIntensity * 0.7}) 0%, transparent 70%)`, animationDelay: '-5s', transition: 'background 2s ease' }} />
-        <div className="aurora-layer w-[100vw] h-[100vw] top-[10%] left-[10%]" style={{ background: `radial-gradient(circle, hsla(${auroraHue}, 100%, 30%, ${auroraIntensity * 0.4}) 0%, transparent 80%)`, animationDuration: '30s', transition: 'background 2s ease' }} />
-      </div>
+      <AuroraBackground 
+        activeChakraHue={activeChakra.hue} 
+        ambientVolumes={ambientVolumes} 
+        isPlaying={isPlaying} 
+      />
 
-      {/* Immersive Background Effects Rendering for all 16 elements - Increased visibility */}
       <div className="fixed inset-0 pointer-events-none z-[1]">
         <AmbienceCanvas volumes={ambientVolumes} chakraColor={activeChakra.palette.primary} />
       </div>
 
-      {/* Audio Loop System Integration */}
       <AudioPlayerGroup 
         elements={LOOP_ELEMENTS}
         volumes={ambientVolumes}
@@ -369,13 +290,7 @@ export default function AyahuascaSession() {
             isChakraOn={isChakraOn}
             chakraVolume={chakraVolume}
             onChakraVolumeChange={setChakraVolume}
-            onChakraToggle={(type) => {
-              if (type === 'on') {
-                setIsChakraOn(true);
-              } else {
-                setIsChakraOn(false);
-              }
-            }}
+            onChakraToggle={(type) => setIsChakraOn(type === 'on')}
             onChakraSelect={setActiveChakra}
             ambientVolumes={ambientVolumes}
             onAmbientVolumeChange={handleAmbientVolumeChange}
@@ -383,7 +298,7 @@ export default function AyahuascaSession() {
             masterVolume={masterVolume}
             onMasterVolumeChange={setMasterVolume}
             savedTemplates={savedTemplates}
-            onSaveTemplate={saveCurrentTemplate}
+            onSaveTemplate={() => setShowSaveModal(true)}
             onLoadTemplate={loadTemplate}
             onDeleteTemplate={deleteTemplate}
             isMobile={isMobile}
@@ -391,32 +306,48 @@ export default function AyahuascaSession() {
         }
         header={
           <motion.header 
-            className="h-full w-full glass rounded-[24px] flex items-center justify-between px-4 md:px-8 relative overflow-hidden backdrop-blur-2xl border border-white/5 shadow-xl"
+            className="h-full w-full glass rounded-[24px] flex items-center justify-between px-4 md:px-8 relative backdrop-blur-2xl border border-white/5 shadow-xl"
           >
-            {/* Timer Trigger */}
-            <div className="flex items-center gap-3 md:gap-4 group cursor-pointer" onClick={() => setShowTimerPicker(true)}>
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="p-2 md:p-3 rounded-xl md:rounded-2xl bg-white/5 border border-white/10 group-hover:bg-white/10 group-hover:border-white/20 transition-all flex items-center justify-center text-white/40 group-hover:text-white/80"
+            <div className="relative">
+              <div 
+                 className="flex items-center gap-3 md:gap-4 group cursor-pointer" 
+                 onClick={() => setShowTimerPicker(!showTimerPicker)}
               >
-                <Clock className="w-5 h-5 md:w-6 md:h-6" />
-              </motion.div>
-              <div className="hidden md:block">
-                <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-white/30 group-hover:text-white/50 transition-colors">Ciclo de Sessão</p>
-                <p className="text-xs font-light text-white/60 tracking-wider group-hover:text-white/80 transition-colors">Ajustar Duração</p>
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="p-2 md:p-3 rounded-xl md:rounded-2xl bg-white/5 border border-white/10 group-hover:bg-white/10 group-hover:border-white/20 transition-all flex items-center justify-center text-white/40 group-hover:text-white/80"
+                >
+                  <Clock className="w-5 h-5 md:w-6 md:h-6" />
+                </motion.div>
+                <div className="hidden md:block">
+                  <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-white/30 group-hover:text-white/50 transition-colors">Ciclo de Sessão</p>
+                  <p className="text-xs font-light text-white/60 tracking-wider group-hover:text-white/80 transition-colors">Ajustar Duração</p>
+                </div>
               </div>
+
+              <TimerDropdown
+                isOpen={showTimerPicker}
+                onClose={() => setShowTimerPicker(false)}
+                onSelect={(mins) => {
+                  console.log("Timer selected:", mins, "minutes");
+                  setSessionDuration(mins * 60);
+                  setTimeLeft(mins * 60);
+                  showToast(`Sessão definida: ${mins}m`, '⏲️');
+                }}
+                currentMinutes={sessionDuration / 60}
+                chakraColor={activeChakra.palette.primary}
+              />
             </div>
 
             <div className="flex items-center gap-2 md:gap-4">
                 <div 
                   className="text-xl md:text-3xl font-extralight tracking-[0.2em] text-white/90 font-mono cursor-pointer hover:text-white transition-colors mr-2"
-                  onClick={() => setShowTimerPicker(true)}
+                  onClick={() => setShowTimerPicker(!showTimerPicker)}
                 >
                   {formatTime(timeLeft)}
                 </div>
 
-                {/* Fullscreen Toggle */}
                 <motion.button
                   whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
                   onClick={() => setIsFullScreen(!isFullScreen)}
@@ -448,7 +379,6 @@ export default function AyahuascaSession() {
             </div>
 
             <div className="flex items-center gap-3">
-               {/* Breathing Guide Toggle */}
                <motion.button
                  whileHover={{ scale: 1.05 }}
                  whileTap={{ scale: 0.95 }}
@@ -495,7 +425,6 @@ export default function AyahuascaSession() {
               chakraId={activeChakra.id}
               chakraColor={activeChakra.palette.primary}
               chakraPalette={activeChakra.palette}
-              audioLevel={audioLevel}
               ambientVolumes={ambientVolumes}
               isFullScreen={isFullScreen}
               onToggleFullScreen={() => setIsFullScreen(!isFullScreen)}
@@ -509,21 +438,6 @@ export default function AyahuascaSession() {
         }
       />
 
-      {/* Timer Radial Menu Overlay */}
-      <TimerRadialMenu
-        isOpen={showTimerPicker}
-        onClose={() => setShowTimerPicker(false)}
-        onSelect={(mins) => {
-          setSessionDuration(mins * 60);
-          setTimeLeft(mins * 60);
-          showToast(`Sessão definida: ${mins}m`, '⏲️');
-        }}
-        currentMinutes={sessionDuration / 60}
-        chakraColor={activeChakra.palette.primary}
-      />
-
-
-      {/* R2: Fullscreen indicators + controls */}
       <AnimatePresence>
         {isFullScreen && hasStarted && (
           <motion.div
@@ -532,11 +446,9 @@ export default function AyahuascaSession() {
             exit={{ opacity: 0, y: -20 }}
             className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-2.5 rounded-2xl bg-black/40 backdrop-blur-2xl border border-white/10"
           >
-            {/* Timer */}
             <span className="text-lg font-extralight tracking-[0.15em] text-white/70 font-mono">
               {formatTime(timeLeft)}
             </span>
-            {/* Play/Pause */}
             <motion.button
               whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
               onClick={() => setIsPlaying(!isPlaying)}
@@ -544,9 +456,9 @@ export default function AyahuascaSession() {
             >
               {isPlaying ? <Pause className="w-3.5 h-3.5 text-white fill-white" /> : <Play className="w-3.5 h-3.5 text-white fill-white ml-0.5" />}
             </motion.button>
-            {/* Active elements indicator */}
             {activeElementIcons.length > 0 && (
               <div className="flex items-center gap-1 pl-2 border-l border-white/10">
+                {/* @ts-ignore */}
                 {activeElementIcons.slice(0, 5).map(el => {
                   const Icon = el.icon;
                   return <Icon key={el.id} className="w-3.5 h-3.5 text-white/40" />;
@@ -556,9 +468,7 @@ export default function AyahuascaSession() {
                 )}
               </div>
             )}
-            {/* Chakra dot */}
             <div className={`w-2.5 h-2.5 rounded-full ${activeChakra.color} shadow-[0_0_8px_currentColor] ml-1`} />
-            {/* Breathing toggle */}
             <motion.button
               whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
               onClick={() => setBreathingActive(!breathingActive)}
@@ -566,7 +476,6 @@ export default function AyahuascaSession() {
             >
               <WindIcon className="w-3.5 h-3.5" />
             </motion.button>
-            {/* Exit FullScreen */}
             <motion.button
               whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
               onClick={() => setIsFullScreen(false)}
@@ -574,7 +483,6 @@ export default function AyahuascaSession() {
             >
               <Minimize2 className="w-3.5 h-3.5" />
             </motion.button>
-            {/* Exit Experience */}
             <motion.button
               whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
               onClick={exitExperience}
@@ -586,197 +494,15 @@ export default function AyahuascaSession() {
         )}
       </AnimatePresence>
 
-      {/* 4. Start Overlay — Premium Landing */}
-      <AnimatePresence>
-        {!hasStarted && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0, transition: { duration: 1.2 } }}
-            className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden"
-          >
-            {/* Deep Background */}
-            <div className="absolute inset-0 bg-gradient-to-b from-[#030108] via-[#0a0318] to-[#020202]" />
-
-            {/* Animated Sacred Geometry Rings */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="landing-ring absolute w-[500px] h-[500px] rounded-full border border-purple-400/15" />
-              <div className="landing-ring-reverse absolute w-[380px] h-[380px] rounded-full border border-indigo-400/10" style={{ animationDelay: '-3s' }} />
-              <div className="landing-ring absolute w-[650px] h-[650px] rounded-full border border-purple-300/8" style={{ animationDuration: '30s' }} />
-              <div className="landing-ring-reverse absolute w-[280px] h-[280px] rounded-full border-2 border-violet-400/10" style={{ animationDelay: '-7s', animationDuration: '18s' }} />
-              <div className="landing-ring absolute w-[800px] h-[800px] rounded-full border border-purple-500/5" style={{ animationDuration: '35s', animationDelay: '-12s' }} />
-            </div>
-
-            {/* Pulsing Central Glow */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <motion.div
-                animate={{ scale: [1, 1.3, 1], opacity: [0.15, 0.25, 0.15] }}
-                transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-                className="w-[400px] h-[400px] rounded-full bg-purple-500/20 blur-[120px]"
-              />
-            </div>
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <motion.div
-                animate={{ scale: [1.2, 1, 1.2], opacity: [0.1, 0.2, 0.1] }}
-                transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-                className="w-[300px] h-[300px] rounded-full bg-indigo-400/15 blur-[100px]"
-              />
-            </div>
-
-            {/* Floating Particle Dust — client-only to avoid hydration mismatch */}
-            {isMounted && (
-              <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                {Array.from({ length: 30 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="landing-particle"
-                    style={{
-                      left: `${5 + ((i * 31 + 7) % 90)}%`,
-                      bottom: `${-5 - (i % 10)}%`,
-                      animationDelay: `${(i * 1.7) % 8}s`,
-                      animationDuration: `${6 + (i * 1.3) % 6}s`,
-                      width: `${1 + (i % 3)}px`,
-                      height: `${1 + ((i + 1) % 3)}px`,
-                      opacity: 0.3 + ((i * 17) % 50) / 100,
-                    }}
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* Main Content */}
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.3, duration: 1, ease: "easeOut" }}
-              className="relative z-10 text-center px-8 max-w-2xl"
-            >
-              {/* Sacred Mandala Icon */}
-              <div className="mb-10 relative inline-block landing-float">
-                <div className="absolute inset-0 bg-purple-400/20 blur-[60px] rounded-full scale-[2.5]" />
-                <div className="relative">
-                  {isMounted && (
-                    <svg width="80" height="80" viewBox="0 0 80 80" className="mx-auto text-white/80">
-                      <circle cx="40" cy="40" r="36" fill="none" stroke="currentColor" strokeWidth="0.5" opacity="0.3" />
-                      <circle cx="40" cy="40" r="28" fill="none" stroke="currentColor" strokeWidth="0.5" opacity="0.4" />
-                      <circle cx="40" cy="40" r="20" fill="none" stroke="currentColor" strokeWidth="0.5" opacity="0.5" />
-                      <circle cx="40" cy="40" r="12" fill="none" stroke="currentColor" strokeWidth="0.8" opacity="0.6" />
-                      <circle cx="40" cy="40" r="5" fill="currentColor" opacity="0.8" />
-                      {/* Petal shapes */}
-                      {Array.from({ length: 8 }).map((_, i) => {
-                        const angle = (i / 8) * Math.PI * 2;
-                        const x = (40 + Math.cos(angle) * 24).toFixed(3);
-                        const y = (40 + Math.sin(angle) * 24).toFixed(3);
-                        return <circle key={i} cx={x} cy={y} r="2" fill="currentColor" opacity="0.4" />;
-                      })}
-                      {Array.from({ length: 12 }).map((_, i) => {
-                        const angle = (i / 12) * Math.PI * 2;
-                        const x = (40 + Math.cos(angle) * 34).toFixed(3);
-                        const y = (40 + Math.sin(angle) * 34).toFixed(3);
-                        return <circle key={i} cx={x} cy={y} r="1.5" fill="currentColor" opacity="0.25" />;
-                      })}
-                    </svg>
-                  )}
-                </div>
-              </div>
-              
-              {/* Title */}
-              <motion.h1 
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.5, duration: 0.8 }}
-                className="text-6xl md:text-7xl font-extralight tracking-[0.25em] mb-3"
-                style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(192,132,252,0.6) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
-              >
-                AYAGUIDE
-              </motion.h1>
-
-              {/* Subtitle */}
-              <motion.p 
-                initial={{ y: 15, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.7, duration: 0.8 }}
-                className="text-white/35 text-sm tracking-[0.4em] font-light uppercase mb-8"
-              >
-                Portal de Meditação Sonora
-              </motion.p>
-
-              {/* Description */}
-              <motion.p
-                initial={{ y: 15, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.9, duration: 0.8 }}
-                className="text-white/25 text-sm font-light leading-relaxed max-w-md mx-auto mb-10 tracking-wide"
-              >
-                Uma experiência imersiva que combina frequências dos chakras, sons da natureza e mandalas dinâmicas para guiar sua jornada de meditação profunda.
-              </motion.p>
-
-              {/* Feature Pills */}
-              <motion.div
-                initial={{ y: 15, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 1.1, duration: 0.8 }}
-                className="flex flex-wrap justify-center gap-3 mb-14"
-              >
-                {[
-                  { icon: '🎵', text: '7 Frequências dos Chakras' },
-                  { icon: '🌿', text: '16 Sons da Natureza' },
-                  { icon: '🔮', text: 'Mandalas Reativas ao Som' },
-                ].map((feature, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm"
-                  >
-                    <span className="text-sm">{feature.icon}</span>
-                    <span className="text-[11px] text-white/40 tracking-wider font-light">{feature.text}</span>
-                  </div>
-                ))}
-              </motion.div>
-              
-              {/* Glowing CTA Button */}
-              <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 1.3, duration: 0.8 }}
-                className="relative inline-block"
-              >
-                {/* Pulsing Outer Ring */}
-                <div className="absolute inset-0 rounded-full btn-glow-ring border-2 border-purple-400/20" style={{ margin: '-8px' }} />
-                <div className="absolute inset-0 rounded-full btn-glow-ring border border-purple-300/10" style={{ margin: '-16px', animationDelay: '0.5s' }} />
-                
-                <button
-                  onClick={startExperience}
-                  className="relative group px-14 py-5 rounded-full overflow-hidden btn-glow transition-all duration-500 hover:scale-105"
-                  style={{ background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(192, 132, 252, 0.1) 50%, rgba(139, 92, 246, 0.15) 100%)', border: '1px solid rgba(192, 132, 252, 0.25)' }}
-                >
-                  {/* Shimmer Effect */}
-                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent" style={{ animation: 'shimmer-slide 2s infinite' }} />
-                  </div>
-                  
-                  <span className="relative flex items-center gap-3">
-                    <Play className="w-5 h-5 text-purple-300/80 fill-purple-300/60" />
-                    <span className="text-sm tracking-[0.4em] font-light uppercase text-white/80 group-hover:text-white transition-colors">
-                      Entrar na Jornada
-                    </span>
-                  </span>
-                </button>
-              </motion.div>
-              
-              {/* Bottom Attribution */}
-              <motion.p 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1.8, duration: 1 }}
-                className="mt-12 text-white/15 text-[10px] tracking-[0.4em] uppercase font-light"
-              >
-                Desenvolvido para sessões de meditação profunda
-              </motion.p>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      {/* R5: Toast Notifications */}
+      <StartOverlay hasStarted={hasStarted} onStart={startExperience} isMounted={isMounted} />
+      
+      <SaveTemplateModal
+        isOpen={showSaveModal}
+        onClose={() => setShowSaveModal(false)}
+        onSave={handleSaveTemplate}
+        chakraColor={activeChakra.palette.primary}
+      />
+      
       <ToastContainer />
     </div>
   );

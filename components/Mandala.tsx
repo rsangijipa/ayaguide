@@ -3,17 +3,17 @@
 import React, { useEffect, useRef } from 'react';
 import { 
   calculateBands,
-  emod,
   drawPetal,
   drawPoly,
-  drawRing
+  drawRing,
+  emod
 } from '@/lib/mandalaSystem';
 import { getAudioEngine } from '@/lib/audio';
 
 interface MandalaProps {
   chakraId: string;
   ambientVolumes: Record<string, number>;
-  audioLevel: number;
+  audioLevel?: number; // Kept for compatibility, but we use direct engine access
   isPlaying: boolean;
   chakraPalette?: {
     primary: string;
@@ -35,6 +35,20 @@ export function Mandala({
   const rafId = useRef<number | null>(null);
   const audioDataRef = useRef(new Uint8Array(64));
   
+  // High-frequency data refs
+  const playingRef = useRef(isPlaying);
+  const volumesRef = useRef(ambientVolumes);
+  const chakraIdRef = useRef(chakraId);
+  const paletteRef = useRef(chakraPalette);
+
+  // Sync refs with props
+  useEffect(() => {
+    playingRef.current = isPlaying;
+    volumesRef.current = ambientVolumes;
+    chakraIdRef.current = chakraId;
+    paletteRef.current = chakraPalette;
+  }, [isPlaying, ambientVolumes, chakraId, chakraPalette]);
+
   const core = (ctx: CanvasRenderingContext2D, color: string, r: number, hi: number) => {
     const gr = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 3.5);
     gr.addColorStop(0, color.replace('0.8', '0.95').replace('0.4', '0.95'));
@@ -211,7 +225,8 @@ export function Mandala({
       const deltaTime = now - lastTimeRef.current;
       lastTimeRef.current = now;
 
-      // Only increment rotation if playing
+      const isPlaying = playingRef.current;
+
       if (isPlaying) {
         rotationTimeRef.current += deltaTime;
       }
@@ -228,17 +243,20 @@ export function Mandala({
       
       // Draw Mandala
       const cx = w/2; const cy = h/2;
-      const c = chakraPalette?.primary || '#fff';
+      const palette = paletteRef.current;
+      const c = palette?.primary || '#fff';
+      const chakraId = chakraIdRef.current;
+      const volumes = volumesRef.current;
       
       switch(chakraId) {
-        case 'root': drawRoot(ctx, cx, cy, time, bands, ambientVolumes, c); break;
-        case 'sacral': drawSacral(ctx, cx, cy, time, bands, ambientVolumes, c); break;
-        case 'solar': drawSolar(ctx, cx, cy, time, bands, ambientVolumes, c); break;
-        case 'heart': drawHeart(ctx, cx, cy, time, bands, ambientVolumes, c); break;
-        case 'throat': drawThroat(ctx, cx, cy, time, bands, ambientVolumes, c); break;
-        case 'third_eye': drawThirdEye(ctx, cx, cy, time, bands, ambientVolumes, c); break;
-        case 'crown': drawCrown(ctx, cx, cy, time, bands, ambientVolumes, c); break;
-        default: drawHeart(ctx, cx, cy, time, bands, ambientVolumes, c);
+        case 'root': drawRoot(ctx, cx, cy, time, bands, volumes, c); break;
+        case 'sacral': drawSacral(ctx, cx, cy, time, bands, volumes, c); break;
+        case 'solar': drawSolar(ctx, cx, cy, time, bands, volumes, c); break;
+        case 'heart': drawHeart(ctx, cx, cy, time, bands, volumes, c); break;
+        case 'throat': drawThroat(ctx, cx, cy, time, bands, volumes, c); break;
+        case 'thirdeye': drawThirdEye(ctx, cx, cy, time, bands, volumes, c); break;
+        case 'crown': drawCrown(ctx, cx, cy, time, bands, volumes, c); break;
+        default: drawHeart(ctx, cx, cy, time, bands, volumes, c);
       }
 
       rafId.current = requestAnimationFrame(animate);
@@ -250,7 +268,7 @@ export function Mandala({
       window.removeEventListener('resize', resize);
       if (rafId.current) cancelAnimationFrame(rafId.current);
     };
-  }, [chakraId, chakraPalette, isPlaying, ambientVolumes]);
+  }, []); // Run on mount only
 
   return (
     <div className="relative w-full h-full flex items-center justify-center">

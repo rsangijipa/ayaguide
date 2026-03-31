@@ -16,7 +16,6 @@ interface MandalaCardProps {
     accent: string;
     soft: string;
   };
-  audioLevel: number;
   ambientVolumes: Record<string, number>;
   isFullScreen?: boolean;
   onToggleFullScreen?: () => void;
@@ -26,7 +25,6 @@ export function MandalaCard({
   chakraId,
   chakraColor,
   chakraPalette,
-  audioLevel,
   ambientVolumes,
   isPlaying,
   isFullScreen,
@@ -97,7 +95,6 @@ export function MandalaCard({
           chakraId={chakraId}
           chakraPalette={chakraPalette}
           ambientVolumes={ambientVolumes}
-          audioLevel={audioLevel}
           isPlaying={isPlaying}
         />
         
