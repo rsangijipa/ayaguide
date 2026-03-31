@@ -1,0 +1,94 @@
+@import "tailwindcss";
+
+@layer base {
+  @font-face {
+    font-family: 'Outfit';
+    src: url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+  }
+
+  body {
+    @apply font-sans antialiased bg-[#020202] text-white selection:bg-white/20 overflow-hidden;
+    font-family: 'Outfit', sans-serif;
+  }
+
+  :root {
+    --chakra-primary: #ffffff;
+    --chakra-secondary: #888888;
+    --chakra-accent: #444444;
+    --chakra-soft: rgba(255, 255, 255, 0.1);
+  }
+}
+
+@layer components {
+  /* Themed Scrollbar */
+  .sidebar-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--chakra-primary) transparent;
+  }
+
+  .sidebar-scroll::-webkit-scrollbar {
+    width: 3px;
+  }
+
+  .sidebar-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .sidebar-scroll::-webkit-scrollbar-thumb {
+    background: var(--chakra-primary);
+    border-radius: 10px;
+  }
+
+  /* Optimized Luminous Glass */
+  .glass {
+    @apply bg-white/[0.08] backdrop-blur-2xl border border-white/20;
+    box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.2);
+  }
+
+  .glass-sidebar {
+    @apply bg-white/[0.12] backdrop-blur-3xl border border-white/10;
+    box-shadow: 10px 0 40px -10px rgba(0, 0, 0, 0.5);
+  }
+
+  .glass-card {
+    @apply bg-white/[0.04] backdrop-blur-xl border border-white/10 transition-all duration-300;
+  }
+  
+  .glass-card:hover {
+    @apply bg-white/[0.08] border-white/20;
+  }
+  
+  .glass-light {
+    @apply bg-white/[0.12] backdrop-blur-3xl border border-white/30;
+  }
+
+  .glass-dark {
+    @apply bg-black/40 backdrop-blur-3xl border border-white/[0.05];
+  }
+
+  .glass-border {
+    @apply border border-white/10;
+  }
+
+  .card-premium {
+    @apply relative overflow-hidden transition-all duration-300;
+    background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
+  }
+
+  .card-premium:hover {
+    @apply bg-white/[0.03];
+  }
+}
+
+/* Aurora Animation */
+@keyframes aurora {
+  0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+  33% { transform: translate(-5%, -5%) scale(1.05) rotate(2deg); }
+  66% { transform: translate(5%, 5%) scale(0.95) rotate(-2deg); }
+  100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+}
+
+.aurora-layer {
+  @apply absolute rounded-full blur-[120px] opacity-20 transition-all duration-[2000ms] ease-in-out;
+  animation: aurora 25s infinite alternate ease-in-out;
+}
