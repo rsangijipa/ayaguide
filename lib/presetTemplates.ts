@@ -43,6 +43,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       fire: 0.0,
       lava: 0.0,
     },
+    isPreset: true,
   },
   {
     id: 'deep-focus',
@@ -70,6 +71,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       fire: 0.5,
       lava: 0.0,
     },
+    isPreset: true,
   },
   {
     id: 'deep-meditation',
@@ -97,6 +99,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       fire: 0.0,
       lava: 0.0,
     },
+    isPreset: true,
   },
   {
     id: 'restful-sleep',
@@ -124,6 +127,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       fire: 0.0,
       lava: 0.4,
     },
+    isPreset: true,
   },
   {
     id: 'creative-flow',
@@ -151,6 +155,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       fire: 0.4,
       lava: 0.0,
     },
+    isPreset: true,
   },
 ];
 

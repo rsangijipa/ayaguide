@@ -57,6 +57,7 @@ export function AmbienceCanvas({ volumes, chakraColor }: AmbienceCanvasProps) {
     const initAmbience = () => {
       // Init River Lines - Enhanced with more detail
       riverLinesRef.current = Array.from({ length: 20 }).map((_, i) => ({
+        x: 0,
         y: (canvas.height / 20) * i,
         phase: Math.random() * Math.PI * 2,
         speed: 0.015 + Math.random() * 0.04,
