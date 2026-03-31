@@ -1,426 +1,260 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import React, { useEffect, useRef } from 'react';
+import { 
+  calculateBands,
+  emod,
+  drawPetal,
+  drawPoly,
+  drawRing
+} from '@/lib/mandalaSystem';
 import { getAudioEngine } from '@/lib/audio';
 
 interface MandalaProps {
-  hue: number;
-  isPlaying: boolean;
   chakraId: string;
+  ambientVolumes: Record<string, number>;
+  audioLevel: number;
+  isPlaying: boolean;
+  chakraPalette?: {
+    primary: string;
+    secondary: string;
+    accent: string;
+    soft: string;
+  };
 }
 
-interface Theme {
-  center: string;
-  petal1: string;
-  petal2: string;
-  petal3: string;
-  petal4: string;
-  petal5: string;
-  outer: string;
-  bg: string;
-  accent: string;
-  glow: string;
-}
+export function Mandala({ 
+  chakraId, 
+  ambientVolumes, 
+  isPlaying,
+  chakraPalette 
+}: MandalaProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const rotationTimeRef = useRef(0);
+  const lastTimeRef = useRef(performance.now());
+  const rafId = useRef<number | null>(null);
+  const audioDataRef = useRef(new Uint8Array(64));
+  
+  const core = (ctx: CanvasRenderingContext2D, color: string, r: number, hi: number) => {
+    const gr = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 3.5);
+    gr.addColorStop(0, color.replace('0.8', '0.95').replace('0.4', '0.95'));
+    gr.addColorStop(0.45, color.replace('0.8', '0.35').replace('0.4', '0.35'));
+    gr.addColorStop(1, color.replace('0.8', '0').replace('0.4', '0'));
+    ctx.fillStyle = gr;
+    ctx.beginPath(); ctx.arc(0, 0, r * 3.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'white'; ctx.globalAlpha = 0.9 + hi * 0.08;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
+  };
 
-const CHAKRA_THEMES: Record<string, Theme> = {
-  root: {
-    center: 'rgba(239, 68, 68, 0.8)',
-    petal1: 'rgba(239, 68, 68, 0.6)',
-    petal2: 'rgba(220, 38, 38, 0.5)',
-    petal3: 'rgba(185, 28, 28, 0.4)',
-    petal4: 'rgba(153, 27, 27, 0.3)',
-    petal5: 'rgba(127, 29, 29, 0.2)',
-    outer: 'rgba(239, 68, 68, 0.15)',
-    bg: 'rgba(239, 68, 68, 0.05)',
-    accent: 'rgba(255, 255, 255, 0.1)',
-    glow: 'rgba(239, 68, 68, 0.4)',
-  },
-  sacral: {
-    center: 'rgba(249, 115, 22, 0.8)',
-    petal1: 'rgba(249, 115, 22, 0.6)',
-    petal2: 'rgba(234, 88, 12, 0.5)',
-    petal3: 'rgba(194, 65, 12, 0.4)',
-    petal4: 'rgba(154, 52, 18, 0.3)',
-    petal5: 'rgba(124, 45, 18, 0.2)',
-    outer: 'rgba(249, 115, 22, 0.15)',
-    bg: 'rgba(249, 115, 22, 0.05)',
-    accent: 'rgba(255, 255, 255, 0.1)',
-    glow: 'rgba(249, 115, 22, 0.4)',
-  },
-  solar: {
-    center: 'rgba(250, 204, 21, 0.8)',
-    petal1: 'rgba(250, 204, 21, 0.6)',
-    petal2: 'rgba(234, 179, 8, 0.5)',
-    petal3: 'rgba(202, 138, 4, 0.4)',
-    petal4: 'rgba(161, 98, 7, 0.3)',
-    petal5: 'rgba(120, 53, 15, 0.2)',
-    outer: 'rgba(250, 204, 21, 0.15)',
-    bg: 'rgba(250, 204, 21, 0.05)',
-    accent: 'rgba(255, 255, 255, 0.1)',
-    glow: 'rgba(250, 204, 21, 0.4)',
-  },
-  heart: {
-    center: 'rgba(16, 185, 129, 0.8)',
-    petal1: 'rgba(16, 185, 129, 0.6)',
-    petal2: 'rgba(5, 150, 105, 0.5)',
-    petal3: 'rgba(4, 120, 87, 0.4)',
-    petal4: 'rgba(5, 83, 63, 0.3)',
-    petal5: 'rgba(6, 54, 42, 0.2)',
-    outer: 'rgba(16, 185, 129, 0.15)',
-    bg: 'rgba(16, 185, 129, 0.05)',
-    accent: 'rgba(255, 255, 255, 0.1)',
-    glow: 'rgba(16, 185, 129, 0.4)',
-  },
-  throat: {
-    center: 'rgba(56, 189, 248, 0.8)',
-    petal1: 'rgba(56, 189, 248, 0.6)',
-    petal2: 'rgba(34, 162, 235, 0.5)',
-    petal3: 'rgba(15, 118, 210, 0.4)',
-    petal4: 'rgba(13, 71, 161, 0.3)',
-    petal5: 'rgba(25, 32, 71, 0.2)',
-    outer: 'rgba(56, 189, 248, 0.15)',
-    bg: 'rgba(56, 189, 248, 0.05)',
-    accent: 'rgba(255, 255, 255, 0.1)',
-    glow: 'rgba(56, 189, 248, 0.4)',
-  },
-  third_eye: {
-    center: 'rgba(129, 140, 248, 0.8)',
-    petal1: 'rgba(129, 140, 248, 0.6)',
-    petal2: 'rgba(99, 102, 241, 0.5)',
-    petal3: 'rgba(79, 70, 229, 0.4)',
-    petal4: 'rgba(55, 48, 163, 0.3)',
-    petal5: 'rgba(30, 27, 102, 0.2)',
-    outer: 'rgba(129, 140, 248, 0.15)',
-    bg: 'rgba(129, 140, 248, 0.05)',
-    accent: 'rgba(255, 255, 255, 0.1)',
-    glow: 'rgba(129, 140, 248, 0.4)',
-  },
-  crown: {
-    center: 'rgba(192, 132, 252, 0.8)',
-    petal1: 'rgba(192, 132, 252, 0.6)',
-    petal2: 'rgba(168, 85, 247, 0.5)',
-    petal3: 'rgba(147, 51, 234, 0.4)',
-    petal4: 'rgba(109, 40, 217, 0.3)',
-    petal5: 'rgba(88, 28, 135, 0.2)',
-    outer: 'rgba(192, 132, 252, 0.15)',
-    bg: 'rgba(192, 132, 252, 0.05)',
-    accent: 'rgba(255, 255, 255, 0.1)',
-    glow: 'rgba(192, 132, 252, 0.4)',
-  },
-};
+  const drawRoot = (ctx: CanvasRenderingContext2D, cx: number, cy: number, t: number, a: {lo: number, mi: number, hi: number}, v: Record<string, number>, c: string) => {
+    const s = Math.min(cx, cy) * 0.85; const rb = t * 0.003;
+    const wm = emod(v, ['water', 'ocean'], t); const fm = emod(v, ['fire', 'lava'], t, 'sin');
+    ctx.save(); ctx.translate(cx, cy);
+    ctx.save(); ctx.rotate(rb * 0.5);
+    for(let i=0; i<40; i++) {
+      const ang = (i/40)*Math.PI*2; const r1 = s*0.94, r2 = s*(i%4===0?0.84:0.89);
+      ctx.strokeStyle = c; ctx.globalAlpha = i%4===0?0.4:0.12; ctx.lineWidth = i%4===0?2:0.7;
+      ctx.beginPath(); ctx.moveTo(Math.cos(ang)*r1, Math.sin(ang)*r1); ctx.lineTo(Math.cos(ang)*r2, Math.sin(ang)*r2); ctx.stroke();
+    } ctx.restore();
+    ctx.save(); ctx.rotate(rb*0.3+Math.PI/4); ctx.strokeStyle = c; ctx.globalAlpha = 0.15+a.lo*0.12;
+    ctx.lineWidth = 1; const sq = s*0.86/Math.SQRT2; ctx.strokeRect(-sq, -sq, sq*2, sq*2); ctx.restore();
+    for(let i=0; i<4; i++) drawPetal(ctx, s*(0.18+fm*0.04), s*(0.18+wm*0.04), s*0.72, (i/4)*Math.PI*2+rb*0.3, c, 0.55);
+    for(let i=0; i<4; i++) drawPetal(ctx, s*0.18, s*0.15, s*0.56, (i/4)*Math.PI*2+Math.PI/4-rb*0.4, c, 0.42);
+    for(let i=0; i<4; i++) drawPetal(ctx, s*0.1, s*0.09, s*0.28, (i/4)*Math.PI*2+rb, c, 0.65);
+    ctx.save(); ctx.rotate(rb*0.8); ctx.strokeStyle = c; ctx.globalAlpha = 0.3; ctx.lineWidth = 1.5;
+    const isq = s*0.33; ctx.strokeRect(-isq, -isq, isq*2, isq*2); ctx.restore();
+    if(wm>0.03) { for(let r=1; r<=4; r++) drawRing(ctx, s*(0.38+r*0.1)*(1+wm*0.08*Math.sin(t*0.04+r)), '#38BDF8', wm*(0.35-r*0.06), 0.8); }
+    ctx.save(); ctx.rotate(rb*1.2); ctx.strokeStyle = c; ctx.globalAlpha = 0.5+a.hi*0.25; ctx.lineWidth = 1.5;
+    const cr = s*0.22; ctx.beginPath(); ctx.moveTo(-cr, 0); ctx.lineTo(cr, 0); ctx.moveTo(0, -cr); ctx.lineTo(0, cr); ctx.stroke();
+    drawRing(ctx, cr, c, 0.4+a.hi*0.2, 1.5); ctx.restore();
+    core(ctx, c, s*(0.06+a.hi*0.04), a.hi);
+    ctx.restore();
+  };
 
-export function Mandala({ hue, isPlaying, chakraId }: MandalaProps) {
-  const svgRef = useRef<SVGSVGElement>(null);
-  const rafRef = useRef<number | null>(null);
-  const rotationRef = useRef(0);
-  const audioDataRef = useRef(new Uint8Array(32));
-  const [theme, setTheme] = useState<Theme>(CHAKRA_THEMES[chakraId] || CHAKRA_THEMES.heart);
+  const drawSacral = (ctx: CanvasRenderingContext2D, cx: number, cy: number, t: number, a: {lo: number, mi: number, hi: number}, v: Record<string, number>, c: string) => {
+    const s = Math.min(cx, cy) * 0.85; const rb = t * 0.004;
+    const wm = emod(v, ['water', 'ocean', 'waterfall'], t);
+    ctx.save(); ctx.translate(cx, cy);
+    ctx.save(); ctx.rotate(rb * 0.4);
+    for(let i=0; i<36; i++) {
+        const ang = (i/36)*Math.PI*2; ctx.strokeStyle = c; ctx.globalAlpha = i%6===0?0.45:0.12; ctx.lineWidth = i%6===0?2:0.7;
+        ctx.beginPath(); ctx.moveTo(Math.cos(ang)*s*0.95, Math.sin(ang)*s*0.95); ctx.lineTo(Math.cos(ang)*s*(i%6===0?0.84:0.89), Math.sin(ang)*s*(i%6===0?0.84:0.89)); ctx.stroke();
+    } ctx.restore();
+    ctx.save(); ctx.rotate(rb*0.25); drawPoly(ctx, 6, s*0.87, 0, c, 0.12, 1); ctx.restore();
+    for(let i=0; i<6; i++) drawPetal(ctx, s*0.15, s*(0.21+wm*0.05+a.mi*0.03), s*(0.73+wm*0.1), (i/6)*Math.PI*2+rb*0.5, c, 0.5);
+    for(let i=0; i<6; i++) drawPetal(ctx, s*0.15, s*0.16, s*(0.56+wm*0.07), (i/6)*Math.PI*2+Math.PI/6-rb*0.6, c, 0.4);
+    if(wm>0.02) for(let r=1; r<=4; r++) drawRing(ctx, s*(0.18+r*0.08)*(1+wm*0.13*Math.sin(t*0.05+r*1.2)), '#38BDF8', wm*(0.32-r*0.055), 0.9);
+    core(ctx, c, s*(0.062+a.mi*0.035), a.hi);
+    ctx.restore();
+  };
+
+  const drawSolar = (ctx: CanvasRenderingContext2D, cx: number, cy: number, t: number, a: {lo: number, mi: number, hi: number}, v: Record<string, number>, c: string) => {
+    const s = Math.min(cx, cy) * 0.85; const rb = t * 0.005;
+    const fm = emod(v, ['fire', 'lava'], t, 'sin'); const wm = emod(v, ['wind', 'storm'], t);
+    ctx.save(); ctx.translate(cx, cy);
+    ctx.save(); ctx.rotate(rb * 0.4);
+    for(let i=0; i<40; i++) {
+        const ang = (i/40)*Math.PI*2; const mn = i%4===0; ctx.strokeStyle = c; ctx.globalAlpha = mn?0.55:0.18; ctx.lineWidth = mn?2.5:0.8;
+        ctx.beginPath(); ctx.moveTo(Math.cos(ang)*s*0.96, Math.sin(ang)*s*0.96); ctx.lineTo(Math.cos(ang)*s*(mn?0.82:0.91), Math.sin(ang)*s*(mn?0.82:0.91)); ctx.stroke();
+    } ctx.restore();
+    for(let i=0; i<10; i++) {
+        const ang = (i/10)*Math.PI*2+rb*0.4; const fr = s*(0.58+fm*0.13+a.mi*0.05+Math.sin(t*0.08+i)*0.02*wm);
+        ctx.save(); ctx.rotate(ang); ctx.globalAlpha = 0.55; ctx.fillStyle = c;
+        ctx.beginPath(); ctx.moveTo(0, -fr*0.12); ctx.bezierCurveTo(s*0.13, -fr*0.12+fr*0.28*0.85, s*0.04, -fr*0.12+fr*0.6, 0, -fr*0.12+fr);
+        ctx.bezierCurveTo(-s*0.04, -fr*0.12+fr*0.6, -s*0.13, -fr*0.12+fr*0.28*0.85, 0, -fr*0.12); ctx.closePath(); ctx.fill(); ctx.restore();
+    }
+    for(let i=0; i<10; i++) {
+        const ang = (i/10)*Math.PI*2+Math.PI/10-rb*0.5; drawPetal(ctx, s*0.14, s*0.09, s*(0.38+fm*0.08+a.mi*0.04), ang, c, 0.42);
+    }
+    ctx.save(); ctx.rotate(rb*0.6); drawPoly(ctx, 3, s*0.33, -Math.PI/6, c, 0.18, 1.5); ctx.restore();
+    core(ctx, c, s*(0.065+a.hi*0.04), a.hi);
+    ctx.restore();
+  };
+
+  const drawHeart = (ctx: CanvasRenderingContext2D, cx: number, cy: number, t: number, a: {lo: number, mi: number, hi: number}, v: Record<string, number>, c: string) => {
+    const s = Math.min(cx, cy) * 0.85; const rb = t * 0.0035;
+    const wm = emod(v, ['water', 'rain'], t); const bm = emod(v, ['bells', 'singing_bowl'], t, 'cos');
+    ctx.save(); ctx.translate(cx, cy);
+    ctx.save(); ctx.rotate(rb * 0.3);
+    for(let i=0; i<48; i++) {
+        const ang = (i/48)*Math.PI*2; const mn = i%4===0; ctx.strokeStyle = c; ctx.globalAlpha = mn?0.42:0.13; ctx.lineWidth = mn?2:0.7;
+        ctx.beginPath(); ctx.moveTo(Math.cos(ang)*s*0.96, Math.sin(ang)*s*0.96); ctx.lineTo(Math.cos(ang)*s*(mn?0.87:0.91), Math.sin(ang)*s*(mn?0.87:0.91)); ctx.stroke();
+    } ctx.restore();
+    ctx.save(); ctx.rotate(rb*0.2); drawPoly(ctx, 3, s*0.8, Math.PI/6, c, 0.1, 1); drawPoly(ctx, 3, s*0.8, -Math.PI/6, c, 0.1, 1); ctx.restore();
+    for(let i=0; i<12; i++) drawPetal(ctx, s*0.12, s*(0.17+bm*0.04+wm*0.04), s*(0.76+wm*0.07), (i/12)*Math.PI*2+rb*0.4, c, 0.46);
+    for(let i=0; i<12; i++) drawPetal(ctx, s*0.12, s*0.13, s*(0.54+wm*0.05), (i/12)*Math.PI*2+Math.PI/12-rb*0.5, c, 0.36);
+    if(bm>0.02) for(let r=1; r<=6; r++) drawRing(ctx, s*(0.09+r*0.07+bm*0.04*Math.sin(t*0.04+r*0.8)), '#C084FC', bm*(0.38-r*0.05), 1);
+    core(ctx, c, s*(0.06+a.hi*0.038), a.hi);
+    ctx.restore();
+  };
+
+  const drawThroat = (ctx: CanvasRenderingContext2D, cx: number, cy: number, t: number, a: {lo: number, mi: number, hi: number}, v: Record<string, number>, c: string) => {
+    const s = Math.min(cx, cy) * 0.85; const rb = t * 0.004;
+    const wm = emod(v, ['wind', 'leaves'], t); const bm = emod(v, ['singing_bowl', 'bells'], t, 'cos');
+    ctx.save(); ctx.translate(cx, cy);
+    drawRing(ctx, s*0.92, c, 0.18, 1);
+    ctx.save(); ctx.rotate(rb * 0.3);
+    for(let i=0; i<64; i++) {
+        const ang = (i/64)*Math.PI*2; const mn = i%4===0; ctx.strokeStyle = c; ctx.globalAlpha = mn?0.48:0.1; ctx.lineWidth = mn?2:0.5;
+        ctx.beginPath(); ctx.moveTo(Math.cos(ang)*s*0.95, Math.sin(ang)*s*0.95); ctx.lineTo(Math.cos(ang)*s*(mn?0.86:0.91), Math.sin(ang)*s*(mn?0.86:0.91)); ctx.stroke();
+    } ctx.restore();
+    for(let i=0; i<16; i++) drawPetal(ctx, s*0.08, s*(0.085+wm*0.03), s*(0.84+a.mi*0.05+wm*0.05), (i/16)*Math.PI*2+rb*0.35, c, 0.43);
+    for(let i=0; i<16; i++) drawPetal(ctx, s*0.08, s*0.07, s*(0.6+a.mi*0.04), (i/16)*Math.PI*2+Math.PI/16-rb*0.5, c, 0.33);
+    for(let r=1; r<=7; r++) drawRing(ctx, s*(0.09+r*0.055+bm*0.035*Math.sin(t*0.04+r)), c, 0.13+bm*0.18-r*0.015, 0.9);
+    core(ctx, c, s*(0.055+a.hi*0.033), a.hi);
+    ctx.restore();
+  };
+
+  const drawThirdEye = (ctx: CanvasRenderingContext2D, cx: number, cy: number, t: number, a: {lo: number, mi: number, hi: number}, v: Record<string, number>, c: string) => {
+    const s = Math.min(cx, cy) * 0.85; const rb = t * 0.003;
+    const mm = emod(v, ['bells', 'gong', 'singing_bowl'], t, 'cos');
+    ctx.save(); ctx.translate(cx, cy);
+    drawRing(ctx, s*0.92, c, 0.22, 1.5);
+    ctx.save(); ctx.rotate(rb * 0.2);
+    for(let i=0; i<96; i++) {
+        const ang = (i/96)*Math.PI*2; const mn = i%48===0, sub = i%8===0; ctx.strokeStyle = c; ctx.globalAlpha = mn?0.75:sub?0.3:0.1; ctx.lineWidth = mn?3:sub?1.5:0.5;
+        ctx.beginPath(); ctx.moveTo(Math.cos(ang)*s*0.95, Math.sin(ang)*s*0.95); ctx.lineTo(Math.cos(ang)*s*(mn?0.82:sub?0.88:0.92), Math.sin(ang)*s*(mn?0.82:sub?0.88:0.92)); ctx.stroke();
+    } ctx.restore();
+    const er = s*(0.6+a.mi*0.06+mm*0.04), ew = s*(0.38+mm*0.05);
+    ctx.save(); ctx.globalAlpha = 0.42; ctx.fillStyle = c;
+    ctx.beginPath(); ctx.moveTo(-er, 0); ctx.bezierCurveTo(-er+ew, -ew*0.5, -ew*0.3, -ew*0.6, 0, 0); ctx.bezierCurveTo(-ew*0.3, ew*0.6, -er+ew, ew*0.5, -er, 0); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(er, 0); ctx.bezierCurveTo(er-ew, -ew*0.5, ew*0.3, -ew*0.6, 0, 0); ctx.bezierCurveTo(ew*0.3, ew*0.6, er-ew, ew*0.5, er, 0); ctx.closePath(); ctx.fill(); ctx.restore();
+    ctx.save(); ctx.rotate(rb*0.4); for(let i=0; i<24; i++) drawPetal(ctx, s*0.12, s*0.045, s*0.7, (i/24)*Math.PI*2, c, 0.25); ctx.restore();
+    core(ctx, c, s*(0.1+a.hi*0.04), a.hi);
+    ctx.restore();
+  };
+
+  const drawCrown = (ctx: CanvasRenderingContext2D, cx: number, cy: number, t: number, a: {lo: number, mi: number, hi: number}, v: Record<string, number>, c: string) => {
+    const s = Math.min(cx, cy) * 0.85; const rb = t * 0.0025;
+    const gm = emod(v, ['gong', 'bells', 'singing_bowl'], t, 'cos');
+    ctx.save(); ctx.translate(cx, cy);
+    ctx.save(); ctx.rotate(rb * 0.15);
+    for(let i=0; i<144; i++) {
+        const ang = (i/144)*Math.PI*2; const mn = i%12===0, sb = i%4===0; ctx.strokeStyle = c; ctx.globalAlpha = mn?0.55:sb?0.22:0.07; ctx.lineWidth = mn?2.5:sb?1:0.4;
+        ctx.beginPath(); ctx.moveTo(Math.cos(ang)*s*0.96, Math.sin(ang)*s*0.96); ctx.lineTo(Math.cos(ang)*s*(mn?0.84:sb?0.89:0.93), Math.sin(ang)*s*(mn?0.84:sb?0.89:0.93)); ctx.stroke();
+    } ctx.restore();
+    const pCnts = [24, 20, 16, 12, 8, 6]; const pRad = [0.82, 0.69, 0.57, 0.44, 0.32, 0.22]; const pAlp = [0.32, 0.36, 0.40, 0.44, 0.48, 0.55];
+    pCnts.forEach((cnt, li) => {
+        const dir = li%2===0?1:-1; const rs = (0.5+li*0.3)*dir; const ph = s*(pRad[li]-(li<5?pRad[li+1]:0.1));
+        for(let i=0; i<cnt; i++) {
+            const ang = (i/cnt)*Math.PI*2+rb*rs; drawPetal(ctx, s*(li<5?pRad[li+1]:0.1), s*0.08, ph, ang, `hsl(${278+li*9},68%,72%)`, pAlp[li]+gm*0.08);
+        }
+    });
+    core(ctx, c, s*(0.07+a.hi*0.045), a.hi);
+    ctx.restore();
+  };
 
   useEffect(() => {
-    setTheme(CHAKRA_THEMES[chakraId] || CHAKRA_THEMES.heart);
-  }, [chakraId]);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d', { alpha: true });
+    if (!ctx) return;
 
-  useEffect(() => {
-    const engine = getAudioEngine();
-    if (!engine || !svgRef.current) return;
+    const resize = () => {
+      const parent = canvas.parentElement;
+      if (parent) {
+        canvas.width = parent.clientWidth * window.devicePixelRatio;
+        canvas.height = parent.clientHeight * window.devicePixelRatio;
+        canvas.style.width = `${parent.clientWidth}px`;
+        canvas.style.height = `${parent.clientHeight}px`;
+        ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+      }
+    };
+
+    window.addEventListener('resize', resize); resize();
 
     const animate = () => {
-      rotationRef.current += 0.5;
+      const w = canvas.width / window.devicePixelRatio;
+      const h = canvas.height / window.devicePixelRatio;
+      
+      const now = performance.now();
+      const deltaTime = now - lastTimeRef.current;
+      lastTimeRef.current = now;
 
-      if (isPlaying && engine) {
-        engine.getFrequencyData(audioDataRef.current);
+      // Only increment rotation if playing
+      if (isPlaying) {
+        rotationTimeRef.current += deltaTime;
+      }
+      
+      const time = rotationTimeRef.current;
+
+      // Clear
+      ctx.clearRect(0, 0, w, h);
+
+      // Get Audio Bands
+      const engine = getAudioEngine();
+      if (isPlaying && engine) engine.getFrequencyData(audioDataRef.current);
+      const bands = calculateBands(audioDataRef.current);
+      
+      // Draw Mandala
+      const cx = w/2; const cy = h/2;
+      const c = chakraPalette?.primary || '#fff';
+      
+      switch(chakraId) {
+        case 'root': drawRoot(ctx, cx, cy, time, bands, ambientVolumes, c); break;
+        case 'sacral': drawSacral(ctx, cx, cy, time, bands, ambientVolumes, c); break;
+        case 'solar': drawSolar(ctx, cx, cy, time, bands, ambientVolumes, c); break;
+        case 'heart': drawHeart(ctx, cx, cy, time, bands, ambientVolumes, c); break;
+        case 'throat': drawThroat(ctx, cx, cy, time, bands, ambientVolumes, c); break;
+        case 'third_eye': drawThirdEye(ctx, cx, cy, time, bands, ambientVolumes, c); break;
+        case 'crown': drawCrown(ctx, cx, cy, time, bands, ambientVolumes, c); break;
+        default: drawHeart(ctx, cx, cy, time, bands, ambientVolumes, c);
       }
 
-      const svg = svgRef.current;
-      if (!svg) return;
-
-      const high = audioDataRef.current[15] || 0;
-      const mid = audioDataRef.current[8] || 0;
-      const low = audioDataRef.current[2] || 0;
-
-      // Outer Ring - Responds to Low Frequencies
-      const l1 = svg.getElementById('layer-outer') as SVGElement | null;
-      if (l1) {
-        l1.style.transform = `rotate(${rotationRef.current * 0.3}deg) scale(${1 + (low / 255) * 0.2})`;
-      }
-
-      // Petal Layer 1 - Responds to Mid Frequencies
-      const l2 = svg.getElementById('layer-petal1') as SVGElement | null;
-      if (l2) {
-        l2.style.transform = `rotate(${rotationRef.current * 0.6}deg) scale(${1 + (mid / 255) * 0.25})`;
-      }
-
-      // Petal Layer 2
-      const l2b = svg.getElementById('layer-petal2') as SVGElement | null;
-      if (l2b) {
-        l2b.style.transform = `rotate(${-rotationRef.current * 0.5}deg) scale(${1 + (mid / 255) * 0.2})`;
-      }
-
-      // Petal Layer 3
-      const l3 = svg.getElementById('layer-petal3') as SVGElement | null;
-      if (l3) {
-        l3.style.transform = `rotate(${rotationRef.current * 0.9}deg) scale(${1 + (high / 255) * 0.3})`;
-      }
-
-      // Petal Layer 4 - New Layer
-      const l4 = svg.getElementById('layer-petal4') as SVGElement | null;
-      if (l4) {
-        l4.style.transform = `rotate(${-rotationRef.current * 0.7}deg) scale(${1 + (high / 255) * 0.25})`;
-      }
-
-      // Petal Layer 5 - New Layer
-      const l5 = svg.getElementById('layer-petal5') as SVGElement | null;
-      if (l5) {
-        l5.style.transform = `rotate(${rotationRef.current * 1.1}deg) scale(${1 + (mid / 255) * 0.2})`;
-      }
-
-      // Center Layer - Responds to High Frequencies
-      const cf = svg.getElementById('layer-center') as SVGElement | null;
-      if (cf) {
-        cf.style.transform = `rotate(${-rotationRef.current * 1.2}deg) scale(${1 + (high / 255) * 0.4})`;
-      }
-
-      // Inner Rings
-      const innerRings = svg.getElementById('inner-rings') as SVGElement | null;
-      if (innerRings) {
-        innerRings.style.transform = `rotate(${rotationRef.current * 1.5}deg) scale(${1 + (high / 255) * 0.35})`;
-      }
-
-      // Core Glow
-      const core = svg.getElementById('center-core') as SVGElement | null;
-      if (core) {
-        const glow = 15 + (high / 255) * 50;
-        core.style.filter = `blur(${glow / 2}px)`;
-        core.style.opacity = (0.3 + (high / 255) * 0.7).toString();
-      }
-
-      // Outer Glow
-      const outerGlow = svg.getElementById('outer-glow') as SVGCircleElement | null;
-      if (outerGlow) {
-        const glowRadius = 200 + (low / 255) * 50;
-        outerGlow.setAttribute('r', glowRadius.toString());
-        outerGlow.style.opacity = (0.1 + (low / 255) * 0.3).toString();
-      }
-
-      rafRef.current = requestAnimationFrame(animate);
+      rafId.current = requestAnimationFrame(animate);
     };
 
-    rafRef.current = requestAnimationFrame(animate);
+    animate();
 
     return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      window.removeEventListener('resize', resize);
+      if (rafId.current) cancelAnimationFrame(rafId.current);
     };
-  }, [isPlaying, theme.center]);
-
-  const renderPetals = (
-    id: string,
-    count: number,
-    radius: number,
-    width: number,
-    height: number,
-    color: string,
-    rotateOffset: number = 0,
-    hasDot: boolean = false
-  ) => {
-    const petals = [];
-    for (let i = 0; i < count; i++) {
-      const angle = (i * (360 / count)) + rotateOffset;
-      const d = `M 200,${200 - radius}
-                 Q ${200 - width},${200 - radius + height / 2} 200,${200 - radius + height}
-                 Q ${200 + width},${200 - radius + height / 2} 200,${200 - radius} Z`;
-      petals.push(
-        <g key={i} transform={`rotate(${angle}, 200, 200)`}>
-          <motion.path
-            d={d}
-            fill={color}
-            stroke="rgba(255,255,255,0.08)"
-            strokeWidth="0.5"
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: i * 0.02, type: 'spring', stiffness: 120 }}
-          />
-          {hasDot && (
-            <circle
-              cx="200"
-              cy={200 - radius + 25}
-              r="1.5"
-              fill="rgba(255,255,255,0.15)"
-            />
-          )}
-        </g>
-      );
-    }
-    return (
-      <g id={id} className="origin-center">
-        {petals}
-      </g>
-    );
-  };
-
-  const renderInnerRings = () => {
-    const rings = [];
-    for (let i = 1; i <= 4; i++) {
-      const radius = 30 + i * 15;
-      const opacity = 0.3 - i * 0.05;
-      rings.push(
-        <circle
-          key={`ring-${i}`}
-          cx="200"
-          cy="200"
-          r={radius}
-          fill="none"
-          stroke={theme.accent}
-          strokeWidth="0.5"
-          opacity={opacity}
-        />
-      );
-    }
-    return rings;
-  };
+  }, [chakraId, chakraPalette, isPlaying, ambientVolumes]);
 
   return (
-    <div className="relative w-full aspect-square flex items-center justify-center p-8">
-      <svg
-        ref={svgRef}
-        viewBox="0 0 400 400"
-        className="w-full h-full max-w-[700px] overflow-visible"
-      >
-        <defs>
-          <filter id="bloom-enhanced" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
-            <feColorMatrix
-              in="blur"
-              type="matrix"
-              values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -8"
-              result="glow"
-            />
-            <feBlend in="SourceGraphic" in2="glow" mode="screen" />
-          </filter>
-
-          <radialGradient id="mandala-gradient" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor={theme.center} stopOpacity="0.8" />
-            <stop offset="50%" stopColor={theme.petal1} stopOpacity="0.4" />
-            <stop offset="100%" stopColor={theme.outer} stopOpacity="0.1" />
-          </radialGradient>
-
-          <filter id="soft-glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
-            <feBlend in="SourceGraphic" in2="blur" mode="lighten" />
-          </filter>
-        </defs>
-
-        <g filter="url(#bloom-enhanced)">
-          {/* Outer Ambient Glow - Expanded */}
-          <circle
-            id="outer-glow"
-            cx="200"
-            cy="200"
-            r="200"
-            fill={theme.glow}
-            opacity="0.15"
-            className="origin-center"
-          />
-
-          {/* Outer Ring Layer */}
-          <g id="layer-outer" className="origin-center">
-            <circle cx="200" cy="200" r="190" fill={theme.outer} opacity="0.25" />
-            {Array.from({ length: 48 }).map((_, i) => (
-              <rect
-                key={i}
-                x="199.5"
-                y="5"
-                width="1"
-                height="18"
-                fill="white"
-                opacity={0.08 + (i % 2) * 0.04}
-                transform={`rotate(${(i * 360) / 48}, 200, 200)`}
-              />
-            ))}
-          </g>
-
-          {/* Main Background */}
-          <motion.circle
-            id="main-bg"
-            cx="200"
-            cy="200"
-            r="165"
-            fill="url(#mandala-gradient)"
-            opacity="0.15"
-            className="origin-center"
-            animate={{ fill: 'url(#mandala-gradient)' }}
-            transition={{ duration: 1.5 }}
-          />
-
-          {/* Animated Petals */}
-          <AnimatePresence mode="popLayout">
-            <motion.g
-              key={chakraId}
-              initial={{ opacity: 0, scale: 0.85, rotate: -30 }}
-              animate={{ opacity: 1, scale: 1, rotate: 0 }}
-              exit={{ opacity: 0, scale: 1.15, rotate: 30 }}
-              transition={{ duration: 1.3, ease: 'circOut' }}
-            >
-              {renderPetals('layer-petal1', 16, 160, 50, 100, theme.petal1, 11, true)}
-              {renderPetals('layer-petal2', 16, 130, 40, 90, theme.petal2, 0, true)}
-              {renderPetals('layer-petal3', 16, 100, 30, 75, theme.petal3, 11, false)}
-              {renderPetals('layer-petal4', 12, 70, 22, 55, theme.petal4, 15, true)}
-              {renderPetals('layer-petal5', 12, 50, 15, 40, theme.petal5, 0, false)}
-
-              {/* Center Flower - Enhanced */}
-              <g id="layer-center" className="origin-center">
-                {Array.from({ length: 16 }).map((_, i) => (
-                  <circle
-                    key={i}
-                    cx="200"
-                    cy="165"
-                    r="14"
-                    fill={theme.center}
-                    opacity={0.7 + (i % 2) * 0.2}
-                    stroke="rgba(255,255,255,0.15)"
-                    strokeWidth="0.5"
-                    transform={`rotate(${(i * 360) / 16}, 200, 200)`}
-                  />
-                ))}
-              </g>
-            </motion.g>
-          </AnimatePresence>
-
-          {/* Inner Rings */}
-          <g id="inner-rings" className="origin-center" filter="url(#soft-glow)">
-            {renderInnerRings()}
-          </g>
-
-          {/* Core Glow - Enhanced */}
-          <circle
-            id="center-core"
-            cx="200"
-            cy="200"
-            r="35"
-            fill={theme.center}
-            opacity="0.5"
-            className="origin-center"
-            filter="url(#soft-glow)"
-          />
-
-          {/* Inner Core - Bright */}
-          <circle cx="200" cy="200" r="20" fill="white" opacity="0.95" />
-
-          {/* Center Dot */}
-          <circle cx="200" cy="200" r="10" fill={theme.center} opacity="0.9" />
-
-          {/* Decorative Triangles around Center */}
-          {Array.from({ length: 8 }).map((_, i) => (
-            <polygon
-              key={`tri-${i}`}
-              points="200,180 190,200 210,200"
-              fill={theme.petal2}
-              opacity="0.3"
-              transform={`rotate(${(i * 360) / 8}, 200, 200)`}
-            />
-          ))}
-        </g>
-      </svg>
+    <div className="relative w-full h-full flex items-center justify-center">
+      <canvas ref={canvasRef} className="w-full h-full object-contain pointer-events-none" />
     </div>
   );
 }

@@ -92,11 +92,20 @@ export default function AyahuascaSession() {
     Object.fromEntries(AMBIENT_SOUNDS.map(s => [s.id, 0]))
   );
   
+  const [masterVolume, setMasterVolume] = useState(0.7);
+  
   const bellAudioRef = useRef<HTMLAudioElement | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(false);
   const [savedTemplates, setSavedTemplates] = useState<any[]>([]);
 
   const freqDataRef = useRef(new Uint8Array(32));
+
+  // Sync Master Volume with Audio Engine
+  useEffect(() => {
+    const engine = getAudioEngine();
+    if (engine) engine.setMasterVolume(masterVolume);
+  }, [masterVolume]);
 
   // Persistence logic
   useEffect(() => {
@@ -187,11 +196,27 @@ export default function AyahuascaSession() {
     setAmbientVolumes(prev => ({ ...prev, [id]: vol }));
   };
 
+  const handleClearAll = () => {
+    setIsChakraOn(false);
+    setChakraVolume(0);
+    setAmbientVolumes(prev => {
+      const reset = { ...prev };
+      Object.keys(reset).forEach(id => reset[id] = 0);
+      return reset;
+    });
+    // Visual feedback
+    if (bellAudioRef.current) {
+      bellAudioRef.current.volume = 0.1;
+      bellAudioRef.current.play().catch(() => {});
+    }
+  };
+
   const startExperience = () => {
     const engine = getAudioEngine();
     if (engine) {
       engine.init();
       engine.resume();
+      engine.setMasterVolume(masterVolume);
     }
     setHasStarted(true);
     // Optionally start playing immediately
@@ -209,13 +234,16 @@ export default function AyahuascaSession() {
            "--chakra-soft": activeChakra.palette.soft,
       } as any}
     >
-      <div className="fixed inset-0 pointer-events-none z-0">
+      <div className="fixed inset-0 pointer-events-none z-[0] bg-[#020202]">
         <div className="aurora-layer w-[80vw] h-[80vw] -top-[40%] -left-[20%]" style={{ background: `radial-gradient(circle, hsla(${activeChakra.hue}, 100%, 50%, 0.15) 0%, transparent 70%)` }} />
         <div className="aurora-layer w-[60vw] h-[60vw] -bottom-[30%] -right-[10%]" style={{ background: `radial-gradient(circle, hsla(${(activeChakra.hue + 180) % 360}, 100%, 50%, 0.1) 0%, transparent 70%)`, animationDelay: '-5s' }} />
         <div className="aurora-layer w-[100vw] h-[100vw] top-[10%] left-[10%]" style={{ background: `radial-gradient(circle, hsla(${activeChakra.hue}, 100%, 30%, 0.05 + ${audioLevel * 0.1}) 0%, transparent 80%)`, animationDuration: '30s' }} />
       </div>
 
-      <AmbienceCanvas volumes={ambientVolumes} chakraColor={activeChakra.palette.primary} />
+      {/* Immersive Background Effects Rendering for all 16 elements - Increased visibility */}
+      <div className="fixed inset-0 pointer-events-none z-[1]">
+        <AmbienceCanvas volumes={ambientVolumes} chakraColor={activeChakra.palette.primary} />
+      </div>
 
       {/* Audio Loop System Integration */}
       <AudioPlayerGroup 
@@ -228,74 +256,96 @@ export default function AyahuascaSession() {
       <audio ref={bellAudioRef} src="https://cdn.freesound.org/previews/15/15402_45941-lq.mp3" crossOrigin="anonymous" />
 
       {/* 1. Left Sidebar Card */}
-      <Sidebar
-        chakras={CHAKRAS}
-        activeChakra={activeChakra}
-        isChakraOn={isChakraOn}
-        chakraVolume={chakraVolume}
-        onChakraVolumeChange={setChakraVolume}
-        onChakraToggle={(type) => {
-          if (type === 'on') {
-            setIsChakraOn(true);
-          } else {
-            setIsChakraOn(false);
-          }
-        }}
-        onChakraSelect={setActiveChakra}
-        ambientVolumes={ambientVolumes}
-        onAmbientVolumeChange={handleAmbientVolumeChange}
-        savedTemplates={savedTemplates}
-        onSaveTemplate={saveCurrentTemplate}
-        onLoadTemplate={loadTemplate}
-        onDeleteTemplate={deleteTemplate}
-      />
+      <AnimatePresence mode="wait">
+        {!isFullScreen && (
+          <motion.div
+            initial={{ x: -400, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -400, opacity: 0 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className="h-full"
+          >
+            <Sidebar
+              chakras={CHAKRAS}
+              activeChakra={activeChakra}
+              isChakraOn={isChakraOn}
+              chakraVolume={chakraVolume}
+              onChakraVolumeChange={setChakraVolume}
+              onChakraToggle={(type) => {
+                if (type === 'on') {
+                  setIsChakraOn(true);
+                } else {
+                  setIsChakraOn(false);
+                }
+              }}
+              onChakraSelect={setActiveChakra}
+              ambientVolumes={ambientVolumes}
+              onAmbientVolumeChange={handleAmbientVolumeChange}
+              onClearAll={handleClearAll}
+              masterVolume={masterVolume}
+              onMasterVolumeChange={setMasterVolume}
+              savedTemplates={savedTemplates}
+              onSaveTemplate={saveCurrentTemplate}
+              onLoadTemplate={loadTemplate}
+              onDeleteTemplate={deleteTemplate}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* 2. Main Area (Timer Top + Mandala Stage) */}
-      <div className="flex-1 flex flex-col gap-4 md:gap-6">
+      <div className="flex-1 flex flex-col gap-4 md:gap-6 relative z-10 transition-all duration-700">
         
         {/* 2a. Top Timer Card */}
-        <motion.header 
-          initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
-          className="h-20 w-full glass rounded-[24px] flex items-center justify-between px-8 shrink-0 border border-white/5 shadow-xl relative overflow-hidden"
-        >
-          <div className="flex items-center gap-4">
-            <div className="p-2.5 rounded-xl bg-white/5 border border-white/10"><Timer className="w-5 h-5 text-white/60" /></div>
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-white/40">Presença na Sessão</p>
-              <p className="text-xs font-light text-white/60 tracking-wider">Continuidade Observada</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-8">
-             <div className="text-3xl font-extralight tracking-[0.2em] text-white/90 font-mono">
-               {formatTime(timeLeft)}
-             </div>
-
-             <motion.button
-              whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-              onClick={() => setIsPlaying(!isPlaying)}
-              className="w-12 h-12 rounded-full glass border border-white/10 flex items-center justify-center group relative overflow-hidden"
+        <AnimatePresence>
+          {!isFullScreen && (
+            <motion.header 
+              initial={{ y: -100, opacity: 0 }} 
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -100, opacity: 0 }}
+              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+              className="h-20 w-full glass rounded-[24px] flex items-center justify-between px-8 shrink-0 border border-white/5 shadow-xl relative overflow-hidden backdrop-blur-2xl"
             >
-              <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-              <AnimatePresence mode="wait">
-                {isPlaying ? (
-                  <motion.div key="pause" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}><Pause className="w-5 h-5 text-white fill-white" /></motion.div>
-                ) : (
-                  <motion.div key="play" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}><Play className="w-5 h-5 text-white fill-white ml-0.5" /></motion.div>
-                )}
-              </AnimatePresence>
-            </motion.button>
-          </div>
+              <div className="flex items-center gap-4">
+                <div className="p-2.5 rounded-xl bg-white/5 border border-white/10"><Timer className="w-5 h-5 text-white/60" /></div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-white/40">Presença na Sessão</p>
+                  <p className="text-xs font-light text-white/60 tracking-wider">Continuidade Observada</p>
+                </div>
+              </div>
 
-          <div className="flex items-center gap-3 text-right">
-             <div className="text-xs font-light text-white/60 tracking-wide">
-               {activeChakra.name.split(' (')[0]}
-             </div>
-             <div className={`w-3 h-3 rounded-full ${activeChakra.color} shadow-[0_0_15px_currentColor]`} />
-          </div>
-          
-          <div className="absolute inset-0 bg-white/[0.02] -z-10" />
-        </motion.header>
+              <div className="flex items-center gap-8">
+                 <div className="text-3xl font-extralight tracking-[0.2em] text-white/90 font-mono">
+                   {formatTime(timeLeft)}
+                 </div>
+
+                 <motion.button
+                  whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+                  onClick={() => setIsPlaying(!isPlaying)}
+                  className="w-12 h-12 rounded-full glass border border-white/10 flex items-center justify-center group relative overflow-hidden"
+                >
+                  <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <AnimatePresence mode="wait">
+                    {isPlaying ? (
+                      <motion.div key="pause" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}><Pause className="w-5 h-5 text-white fill-white" /></motion.div>
+                    ) : (
+                      <motion.div key="play" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}><Play className="w-5 h-5 text-white fill-white ml-0.5" /></motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.button>
+              </div>
+
+              <div className="flex items-center gap-3 text-right">
+                 <div className="text-xs font-light text-white/60 tracking-wide">
+                   {activeChakra.name.split(' (')[0]}
+                 </div>
+                 <div className={`w-3 h-3 rounded-full ${activeChakra.color} shadow-[0_0_15px_currentColor]`} />
+              </div>
+              
+              <div className="absolute inset-0 bg-white/[0.02] -z-10" />
+            </motion.header>
+          )}
+        </AnimatePresence>
 
         {/* 2b. Central Mandala Card */}
         <MandalaCard
@@ -306,6 +356,8 @@ export default function AyahuascaSession() {
           chakraPalette={activeChakra.palette}
           audioLevel={audioLevel}
           ambientVolumes={ambientVolumes}
+          isFullScreen={isFullScreen}
+          onToggleFullScreen={() => setIsFullScreen(!isFullScreen)}
         />
 
       </div>

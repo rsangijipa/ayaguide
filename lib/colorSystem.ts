@@ -99,6 +99,48 @@ export const CHAKRA_COLOR_PALETTES: Record<string, ColorPalette> = {
   },
 };
 
+export interface ParticleTheme {
+  elementId: string;
+  hue: number;
+  saturation: number;
+  lightness: number;
+  speed: number;        // Multiplier for movement
+  gravity: number;      // -1 (rising) to 1 (falling)
+  drift: number;        // -1 (left) to 1 (right)
+  size: number;         // Base size
+  opacity: number;      // Max opacity
+  glow: boolean;        // Whether it has a bloom effect
+  shape: 'circle' | 'line' | 'star' | 'leaf';
+}
+
+export const ELEMENT_PARTICLE_THEMES: Record<string, ParticleTheme> = {
+  // Water Category (Falling/Flowing)
+  water: { elementId: 'water', hue: 200, saturation: 70, lightness: 60, speed: 1.2, gravity: 0.2, drift: 0.1, size: 2, opacity: 0.6, glow: false, shape: 'circle' },
+  ocean: { elementId: 'ocean', hue: 210, saturation: 80, lightness: 50, speed: 0.8, gravity: 0.1, drift: 0.3, size: 3, opacity: 0.4, glow: true, shape: 'circle' },
+  waterfall: { elementId: 'waterfall', hue: 195, saturation: 90, lightness: 80, speed: 2.5, gravity: 0.6, drift: 0.0, size: 1.5, opacity: 0.8, glow: true, shape: 'circle' },
+  
+  // Weather Category
+  rain: { elementId: 'rain', hue: 215, saturation: 30, lightness: 70, speed: 4.0, gravity: 0.9, drift: 0.2, size: 1, opacity: 0.5, glow: false, shape: 'line' },
+  thunder: { elementId: 'thunder', hue: 240, saturation: 50, lightness: 90, speed: 1.5, gravity: 0.1, drift: 0.0, size: 4, opacity: 0.9, glow: true, shape: 'star' },
+  wind: { elementId: 'wind', hue: 180, saturation: 0, lightness: 90, speed: 2.0, gravity: -0.1, drift: 0.8, size: 1, opacity: 0.3, glow: false, shape: 'line' },
+  storm: { elementId: 'storm', hue: 230, saturation: 40, lightness: 40, speed: 3.5, gravity: 0.5, drift: 0.5, size: 2, opacity: 0.7, glow: false, shape: 'line' },
+  
+  // Nature Category
+  birds: { elementId: 'birds', hue: 120, saturation: 60, lightness: 70, speed: 1.5, gravity: -0.2, drift: 0.4, size: 3, opacity: 0.6, glow: true, shape: 'star' },
+  forest: { elementId: 'forest', hue: 110, saturation: 80, lightness: 50, speed: 1.0, gravity: -0.1, drift: 0.2, size: 2, opacity: 0.5, glow: false, shape: 'leaf' },
+  crickets: { elementId: 'crickets', hue: 100, saturation: 50, lightness: 80, speed: 0.7, gravity: -0.3, drift: -0.2, size: 1.5, opacity: 0.8, glow: true, shape: 'circle' },
+  leaves: { elementId: 'leaves', hue: 130, saturation: 70, lightness: 45, speed: 1.8, gravity: 0.3, drift: 0.6, size: 2.5, opacity: 0.6, glow: false, shape: 'leaf' },
+  
+  // Mystical Category
+  bells: { elementId: 'bells', hue: 280, saturation: 70, lightness: 80, speed: 0.5, gravity: -0.4, drift: 0.0, size: 4, opacity: 0.7, glow: true, shape: 'circle' },
+  gong: { elementId: 'gong', hue: 270, saturation: 90, lightness: 60, speed: 0.3, gravity: 0.0, drift: 0.0, size: 8, opacity: 0.5, glow: true, shape: 'circle' },
+  singing_bowl: { elementId: 'singing_bowl', hue: 300, saturation: 60, lightness: 85, speed: 0.4, gravity: -0.2, drift: 0.0, size: 5, opacity: 0.6, glow: true, shape: 'circle' },
+  
+  // Elemental Category (Rising/Burning)
+  fire: { elementId: 'fire', hue: 15, saturation: 100, lightness: 60, speed: 2.5, gravity: -0.8, drift: 0.1, size: 2, opacity: 0.9, glow: true, shape: 'circle' },
+  lava: { elementId: 'lava', hue: 25, saturation: 90, lightness: 50, speed: 1.0, gravity: -0.4, drift: 0.0, size: 4, opacity: 0.8, glow: true, shape: 'circle' },
+};
+
 export const ELEMENT_COLOR_INFLUENCES: Record<string, ElementColorInfluence> = {
   water: { elementId: 'water', hue: 200, saturation: 70, lightness: 50, temperature: 'cool', intensity: 0.3 },
   ocean: { elementId: 'ocean', hue: 210, saturation: 80, lightness: 45, temperature: 'cool', intensity: 0.35 },
