@@ -171,3 +171,31 @@
   animation: fade-in-up 1s ease-out forwards;
   opacity: 0;
 }
+
+/* R4: Responsive Mobile Layout */
+@media (max-width: 768px) {
+  /* Main container becomes vertical */
+  .min-h-screen.flex {
+    flex-direction: column !important;
+    padding: 8px !important;
+    gap: 8px !important;
+  }
+
+  /* Sidebar becomes a bottom sheet */
+  .glass-sidebar {
+    width: 100% !important;
+    max-height: 50vh;
+    border-radius: 24px 24px 0 0 !important;
+    position: fixed !important;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 30 !important;
+    box-shadow: 0 -8px 40px rgba(0,0,0,0.5);
+  }
+
+  /* Mandala card full width */
+  .flex-1.relative {
+    min-height: 60vh;
+  }
+}
