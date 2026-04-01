@@ -15,7 +15,6 @@ import type { Chakra } from '@/lib/types';
 import { LandingHero } from '@/components/LandingHero';
 import { HeroDecoration } from '@/components/HeroDecoration';
 import { LoadingMandala } from '@/components/LoadingMandala';
-import InstallPrompt from '@/components/InstallPrompt';
 import { useServiceWorker } from '@/hooks/useServiceWorker';
 
 // Heavy active session components - Defer everything!
@@ -31,7 +30,6 @@ export default function App() {
   return (
     <ErrorBoundary>
       <AyahuascaSession />
-      <InstallPrompt />
     </ErrorBoundary>
   );
 }

@@ -19,6 +19,7 @@ import { PresetTemplates } from './PresetTemplates';
 import { BinauralPanel } from './BinauralPanel';
 import { JourneySelector } from './JourneyPlayer';
 import { AMBIENT_ELEMENTS, AMBIENT_CATEGORIES } from '@/lib/ambientElements';
+import { BREATHING_PATTERNS } from '@/lib/breathingPatterns';
 import { CHAKRAS } from '@/lib/constants';
 import { useSessionStore } from '@/lib/store';
 import { useShallow } from 'zustand/react/shallow';
@@ -51,6 +52,10 @@ interface SidebarProps {
   isJourneyActive: boolean;
   focusLevel: number;
   onFocusLevelChange: (level: number) => void;
+  breathingActive: boolean;
+  onBreathingToggle: () => void;
+  breathingPatternId: string;
+  onBreathingPatternChange: (id: string) => void;
 }
 
 export const Sidebar = React.memo(function Sidebar({
@@ -79,6 +84,10 @@ export const Sidebar = React.memo(function Sidebar({
   isJourneyActive,
   focusLevel,
   onFocusLevelChange,
+  breathingActive,
+  onBreathingToggle,
+  breathingPatternId,
+  onBreathingPatternChange,
 }: SidebarProps) {
   const { qualityMode } = useSessionStore(
     useShallow((s) => ({
@@ -86,7 +95,7 @@ export const Sidebar = React.memo(function Sidebar({
     }))
   );
 
-  const [expandedSection, setExpandedSection] = useState<'chakras' | 'elements' | 'templates' | 'binaural' | 'journeys' | null>(null);
+  const [expandedSection, setExpandedSection] = useState<'chakras' | 'elements' | 'templates' | 'binaural' | 'journeys' | 'breathing' | null>(null);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [showAllElements, setShowAllElements] = useState(false);
 
@@ -101,11 +110,13 @@ export const Sidebar = React.memo(function Sidebar({
     elements: AMBIENT_ELEMENTS.filter((el) => el.category === cat.id),
   }));
 
+  const bPatterns = BREATHING_PATTERNS;
+
   const visibleElements = showAllElements
     ? AMBIENT_ELEMENTS.filter(el => !expandedCategory || el.category === expandedCategory)
     : AMBIENT_ELEMENTS.filter(el => !expandedCategory || el.category === expandedCategory).slice(0, 4);
 
-  const toggleSection = (section: 'chakras' | 'elements' | 'templates' | 'binaural' | 'journeys') => {
+  const toggleSection = (section: 'chakras' | 'elements' | 'templates' | 'binaural' | 'journeys' | 'breathing') => {
     setExpandedSection(prev => prev === section ? null : section);
   };
 
@@ -363,6 +374,81 @@ export const Sidebar = React.memo(function Sidebar({
                     onVolumeChange={onBinauralVolumeChange}
                     chakraColor={activeChakra.palette.primary}
                   />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Breathing Section */}
+        <div className="flex flex-col border-b border-white/5 pb-2">
+          <button
+            onClick={() => toggleSection('breathing')}
+            className={`w-full flex items-center justify-between p-4 px-5 rounded-2xl transition-all duration-300 outline-none focus-visible:ring-2 focus-visible:ring-white/20 ${
+              expandedSection === 'breathing' 
+                ? 'bg-white/10 text-white' 
+                : 'text-white/40 hover:bg-white/5 hover:text-white/60'
+            }`}
+            aria-expanded={expandedSection === 'breathing'}
+          >
+            <h2 className="text-[10px] uppercase tracking-widest text-white/50 font-bold flex items-center gap-2 pointer-events-none text-left">
+              <span>🌬️</span> Guia de Respiração
+            </h2>
+            <div className="flex items-center gap-2">
+              {breathingActive && (
+                <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+              )}
+              <ChevronDown className={`w-4 h-4 text-white/20 transition-transform duration-500 pointer-events-none ${expandedSection === 'breathing' ? 'rotate-180' : ''}`} />
+            </div>
+          </button>
+          <AnimatePresence initial={false}>
+            {expandedSection === 'breathing' && (
+              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.5, ease: [0.04, 0.62, 0.23, 0.98] }} className="overflow-hidden">
+                <div className="pt-4 pb-4 px-1 space-y-4">
+                  <div className="flex items-center justify-between px-2">
+                    <span className="text-[10px] uppercase tracking-widest text-white/30 font-bold">Ativar Guia</span>
+                    <button 
+                      onClick={onBreathingToggle}
+                      className={`w-10 h-5 rounded-full transition-all relative ${breathingActive ? 'bg-green-500/40' : 'bg-white/10'}`}
+                    >
+                      <motion.div 
+                        animate={{ x: breathingActive ? 22 : 2 }}
+                        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                        className="absolute top-1 w-3 h-3 rounded-full bg-white shadow-sm"
+                      />
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between px-2">
+                       <span className="text-[9px] uppercase tracking-widest text-white/20 font-bold">Padrão Selecionado</span>
+                       <span className="text-[9px] text-white/40 font-mono">{(bPatterns.find(p => p.id === breathingPatternId))?.name || 'Calmo'}</span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-1.5">
+                      {bPatterns.map((p: any) => (
+                        <button
+                          key={p.id}
+                          onClick={() => onBreathingPatternChange(p.id)}
+                          className={`flex items-center justify-between p-3 rounded-xl transition-all border ${
+                            breathingPatternId === p.id 
+                              ? 'bg-white/10 border-white/20 text-white' 
+                              : 'bg-white/5 border-transparent text-white/40 hover:bg-white/10'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm">{p.emoji}</span>
+                            <div className="flex flex-col items-start">
+                              <span className="text-[11px] font-medium">{p.name}</span>
+                              <span className="text-[8px] text-white/20 uppercase tracking-tighter">{p.description}</span>
+                            </div>
+                          </div>
+                          {breathingPatternId === p.id && (
+                            <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </motion.div>
             )}

@@ -298,9 +298,13 @@ export function SessionActive({ onExit, handleStartJourney, handleSaveTemplate }
             onBinauralStateChange={setBinauralState}
             onBinauralVolumeChange={setBinauralVolume}
             onStartJourney={handleStartJourney}
-            isJourneyActive={activeJourney !== null}
-            focusLevel={focusLevel}
+            isJourneyActive={state.activeJourney !== null}
+            focusLevel={state.focusLevel}
             onFocusLevelChange={setFocusLevel}
+            breathingActive={state.breathingActive}
+            onBreathingToggle={toggleBreathingGuide}
+            breathingPatternId={state.breathingPatternId}
+            onBreathingPatternChange={setBreathingPattern}
           />
         }
         header={

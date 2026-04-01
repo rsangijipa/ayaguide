@@ -47,6 +47,8 @@ interface Channel {
   targetVolume: number;
   /** for dynamic panning animation */
   panDirection: number;
+  orbitSpeed: number;
+  orbitPhase: number;
 }
 
 // ─── AudioMixer ───────────────────────────────────────────────────────────────
@@ -232,7 +234,9 @@ class AudioMixer {
         buffer, gainNode, pannerNode, source: null, 
         pauseOffset: 0, playedAt: 0, playing: false, 
         targetVolume: volume,
-        panDirection: Math.random() > 0.5 ? 1 : -1
+        panDirection: Math.random() > 0.5 ? 1 : -1,
+        orbitSpeed: 0.05 + Math.random() * 0.15,
+        orbitPhase: Math.random() * Math.PI * 2
       };
       this.channels.set(url, ch);
     }
@@ -331,22 +335,27 @@ class AudioMixer {
     if (this.panTimer) return;
     
     this.panTimer = window.setInterval(() => {
-      const now = this.ctx?.currentTime || 0;
+      if (!this.ctx || this.ctx.state !== 'running') return;
+      const now = this.ctx.currentTime;
+      
       for (const ch of this.channels.values()) {
         if (!ch.playing) continue;
 
-        // Subtly shift pan
-        let newPan = ch.pannerNode.pan.value + (0.01 * ch.panDirection);
+        // Shift phase based on speed
+        ch.orbitPhase += ch.orbitSpeed * 0.1; 
         
-        // Bounce at limits
-        if (Math.abs(newPan) > 0.7) {
-          ch.panDirection *= -1;
-          newPan = ch.pannerNode.pan.value + (0.01 * ch.panDirection);
-        }
+        // Circular-ish Panning Orbit
+        // Math.sin for pan (L/R)
+        const newPan = Math.sin(ch.orbitPhase) * 0.8;
+        
+        // Math.cos for volume modulation (Depth: Front/Back)
+        // When cos is positive, sound is "closer" (louder), when negative "further" (quieter)
+        const depthMod = 0.85 + (Math.cos(ch.orbitPhase) * 0.15);
         
         ch.pannerNode.pan.setTargetAtTime(newPan, now, 0.5);
+        ch.gainNode.gain.setTargetAtTime(ch.targetVolume * depthMod, now, 0.5);
       }
-    }, 2000);
+    }, 200); // More frequent updates for smoother orbit
   }
 
   /**

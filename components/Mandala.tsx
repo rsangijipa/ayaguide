@@ -42,6 +42,8 @@ export function Mandala({
   const lastTimeRef = useRef(0);
   const rafId = useRef<number | null>(null);
   const audioDataRef = useRef(new Uint8Array(64));
+  const reactiveScaleRef = useRef(1);
+  const reactiveGlowRef = useRef(15);
   
   // High-frequency data refs
   const playingRef = useRef(isPlaying);
@@ -268,13 +270,37 @@ export function Mandala({
       ctx.shadowColor = paletteRef.current?.primary || '#fff';
 
       const engine = getAudioEngine();
-      if (isPlaying && engine) engine.getFrequencyData(audioDataRef.current);
+      let targetScale = 1;
+      let targetGlow = 15;
+
+      if (isPlaying && engine && qualityMode === 'full') {
+        engine.getFrequencyData(audioDataRef.current);
+        const bands = calculateBands(audioDataRef.current);
+        // LO influences scale (bass pulse) - subtle +5% max
+        targetScale = 1 + (bands.lo * 0.06); 
+        // HI influences glow (shimmer) - up to 40px
+        targetGlow = 12 + (bands.hi * 28);
+      }
+
+      // Smooth interpolation (lerp) for organic feel
+      reactiveScaleRef.current += (targetScale - reactiveScaleRef.current) * 0.12;
+      reactiveGlowRef.current += (targetGlow - reactiveGlowRef.current) * 0.08;
+
       const bands = calculateBands(audioDataRef.current);
       const cx = w/2; const cy = h/2;
       const palette = paletteRef.current;
       const c = palette?.primary || '#fff';
       const chakraId = chakraIdRef.current;
       const volumes = volumesRef.current;
+
+      ctx.save();
+      // Apply organic pulse
+      ctx.translate(cx, cy);
+      ctx.scale(reactiveScaleRef.current, reactiveScaleRef.current);
+      ctx.translate(-cx, -cy);
+      
+      ctx.shadowBlur = reactiveGlowRef.current;
+      ctx.shadowColor = c;
       
       switch(chakraId) {
         case 'root': drawRoot(ctx, cx, cy, time, bands, volumes, c); break;
@@ -286,6 +312,7 @@ export function Mandala({
         case 'crown': drawCrown(ctx, cx, cy, time, bands, volumes, c); break;
         default: drawHeart(ctx, cx, cy, time, bands, volumes, c);
       }
+      ctx.restore();
       rafId.current = requestAnimationFrame(animate);
     };
 
