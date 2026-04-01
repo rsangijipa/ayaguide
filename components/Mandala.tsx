@@ -209,9 +209,9 @@ export function Mandala({
     const resize = () => {
       const parent = canvas.parentElement;
       if (parent) {
-        // Reset scale before setting new dimensions
         ctx.setTransform(1, 0, 0, 1, 0, 0);
-        const dpr = window.devicePixelRatio || 1;
+        // Cap DPR to 2.0 to save GPU on high-density displays
+        const dpr = Math.min(window.devicePixelRatio || 1, 2.0);
         canvas.width = parent.clientWidth * dpr;
         canvas.height = parent.clientHeight * dpr;
         canvas.style.width = `${parent.clientWidth}px`;
@@ -230,7 +230,7 @@ export function Mandala({
     resize();
 
     const animate = () => {
-      const dpr = window.devicePixelRatio || 1;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2.0);
       const w = canvas.width / dpr;
       const h = canvas.height / dpr;
       if (w === 0 || h === 0) {

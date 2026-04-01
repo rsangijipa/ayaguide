@@ -45,7 +45,7 @@ function AyahuascaSession() {
     chakraVolume, ambientVolumes, masterVolume, isMuted, hasStarted,
     isFullScreen, showTimerPicker, showSaveModal, breathingActive,
     savedTemplates, breathingPatternId, showBreathingPicker, 
-    binauralState, binauralVolume, activeJourney,
+    binauralState, binauralVolume, activeJourney, isSidebarExpanded,
 
     togglePlay, toggleFullscreen, setMasterVolume, toggleMute, 
     setDuration, tick, setChakra, toggleChakra, setChakraVolume, 
@@ -53,13 +53,21 @@ function AyahuascaSession() {
     toggleSaveModal, toggleBreathingGuide, setBreathingPattern, 
     toggleBreathingPicker, setBinauralState, setBinauralVolume, 
     startJourney, advanceJourneyPhase, journeyPhaseTick, exitJourney,
-    startExperience, addSavedTemplate, removeSavedTemplate, loadTemplate
+    startExperience, addSavedTemplate, removeSavedTemplate, loadTemplate,
+    setSidebarExpanded
   } = store;
 
   const prevVolumeRef = useRef(0.7);
   const bellAudioRef = useRef<HTMLAudioElement | null>(null);
   const [isMounted, setIsMounted] = useState(false);
   const isMobile = useIsMobile(1024);
+
+  // Auto-collapse sidebar on mobile when session starts
+  useEffect(() => {
+    if (isMobile && isPlaying && isSidebarExpanded) {
+      setSidebarExpanded(false);
+    }
+  }, [isPlaying, isMobile, isSidebarExpanded, setSidebarExpanded]);
 
   useEffect(() => { setIsMounted(true); }, []);
 
@@ -423,7 +431,7 @@ function AyahuascaSession() {
                 <motion.button
                   whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
                   onClick={() => toggleFullscreen()}
-                  className="w-10 h-10 md:w-12 md:h-12 rounded-full glass border border-white/10 flex items-center justify-center group relative overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+                  className="w-10 h-10 md:w-11 md:h-11 rounded-full glass border border-white/10 flex items-center justify-center group relative overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-white/40"
                   title={isFullScreen ? "Sair da Tela Cheia" : "Modo Tela Cheia"}
                   aria-label={isFullScreen ? "Sair da Tela Cheia" : "Modo Tela Cheia"}
                 >
@@ -497,7 +505,7 @@ function AyahuascaSession() {
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={handleExitExperience}
-                className="w-10 h-10 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all bg-white/5 border border-white/10 text-white/20 hover:text-red-400 hover:bg-white/10 hover:border-red-400/30 outline-none focus-visible:ring-2 focus-visible:ring-red-400/40"
+                className="w-10 h-10 md:w-11 md:h-11 rounded-2xl flex items-center justify-center transition-all bg-white/5 border border-white/10 text-white/20 hover:text-red-400 hover:bg-white/10 hover:border-red-400/30 outline-none focus-visible:ring-2 focus-visible:ring-red-400/40"
                 title="Sair da Sessão"
                 aria-label="Sair da Sessão"
               >

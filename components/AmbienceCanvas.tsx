@@ -51,7 +51,7 @@ export function AmbienceCanvas({ }: AmbienceCanvasProps) {
 
     const resize = () => {
       const isMobile = window.innerWidth < 768;
-      const dpr = Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2.5);
+      const dpr = Math.min(window.devicePixelRatio || 1, isMobile ? 1.5 : 2.0);
       
       canvas.width = window.innerWidth * dpr;
       canvas.height = window.innerHeight * dpr;
@@ -85,7 +85,7 @@ export function AmbienceCanvas({ }: AmbienceCanvasProps) {
       }
 
       const isMobile = window.innerWidth < 768;
-      const dpr = Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2.5);
+      const dpr = Math.min(window.devicePixelRatio || 1, isMobile ? 1.5 : 2.0);
       const w = canvas.width / dpr;
       const h = canvas.height / dpr;
       frameRef.current++;

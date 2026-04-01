@@ -3,6 +3,7 @@
 import React, { useState, useEffect, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useIsMobile } from '@/hooks/useMediaQuery';
+import { useSessionStore } from '@/lib/store';
 
 interface SessionLayoutProps {
   sidebar: ReactNode;
@@ -23,8 +24,8 @@ export function SessionLayout({
 }: SessionLayoutProps) {
   const isMobileHook = useIsMobile();
   const isMobile = isMobileProp ?? isMobileHook;
+  const { isSidebarExpanded, setSidebarExpanded } = useSessionStore();
 
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
@@ -75,7 +76,7 @@ export function SessionLayout({
             {isMobile && (
               <div 
                 className="w-full h-12 flex items-center justify-center cursor-pointer active:bg-white/5 transition-colors"
-                onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
+                onClick={() => setSidebarExpanded(!isSidebarExpanded)}
               >
                 <div className="w-12 h-1.5 rounded-full bg-white/20" />
               </div>

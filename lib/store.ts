@@ -1,4 +1,5 @@
 import { create, StateCreator } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { 
   Chakra, SessionState, SavedTemplate, 
   BinauralState, ActiveJourney 
@@ -48,6 +49,7 @@ interface UISlice {
   breathingPatternId: string;
   showBreathingPicker: boolean;
   savedTemplates: SavedTemplate[];
+  isSidebarExpanded: boolean; // New: Global sidebar state for mobile auto-collapse
   toggleTimerPicker: () => void;
   toggleSaveModal: () => void;
   toggleBreathingGuide: () => void;
@@ -57,6 +59,7 @@ interface UISlice {
   removeSavedTemplate: (id: string) => void;
   setSavedTemplates: (templates: SavedTemplate[]) => void;
   loadTemplate: (template: SavedTemplate) => void;
+  setSidebarExpanded: (expanded: boolean) => void;
 }
 
 interface JourneySlice {
@@ -105,6 +108,7 @@ const initialUIState = {
   breathingPatternId: 'calm',
   showBreathingPicker: false,
   savedTemplates: [] as SavedTemplate[],
+  isSidebarExpanded: false,
 };
 
 // --- SLICE CREATORS ---
@@ -167,6 +171,7 @@ const createUISlice: StateCreator<SessionStore, [], [], UISlice> = (set) => ({
       isChakraOn: true,
     }));
   },
+  setSidebarExpanded: (expanded) => set(() => ({ isSidebarExpanded: expanded })),
 });
 
 const createJourneySlice: StateCreator<SessionStore, [], [], JourneySlice> = (set) => ({
@@ -193,11 +198,30 @@ const createJourneySlice: StateCreator<SessionStore, [], [], JourneySlice> = (se
   exitJourney: () => set(() => ({ activeJourney: null })),
 });
 
-// --- COMBINED STORE ---
+// --- COMBINED STORE WITH PERSISTENCE ---
 
-export const useSessionStore = create<SessionStore>()((...a) => ({
-  ...createSessionSlice(...a),
-  ...createAudioSlice(...a),
-  ...createUISlice(...a),
-  ...createJourneySlice(...a),
-}));
+export const useSessionStore = create<SessionStore>()(
+  persist(
+    (...a) => ({
+      ...createSessionSlice(...a),
+      ...createAudioSlice(...a),
+      ...createUISlice(...a),
+      ...createJourneySlice(...a),
+    }),
+    {
+      name: 'ayaguide-session-store',
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        // Only persist these fields to avoid state conflicts on reload
+        savedTemplates: state.savedTemplates,
+        masterVolume: state.masterVolume,
+        ambientVolumes: state.ambientVolumes,
+        activeChakra: state.activeChakra,
+        chakraVolume: state.chakraVolume,
+        isMuted: state.isMuted,
+        binauralVolume: state.binauralVolume,
+        breathingPatternId: state.breathingPatternId,
+      }),
+    }
+  )
+);
