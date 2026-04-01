@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useIsMobile } from '@/hooks/useMediaQuery';
 
 interface SessionLayoutProps {
   sidebar: ReactNode;
@@ -20,21 +21,15 @@ export function SessionLayout({
   isFullScreen,
   isMobileProp
 }: SessionLayoutProps) {
-  const [isMobile, setIsMobile] = useState(false);
-  
-  useEffect(() => {
-    setIsMobile(isMobileProp ?? window.innerWidth < 1024);
-  }, [isMobileProp]);
+  const isMobileHook = useIsMobile();
+  const isMobile = isMobileProp ?? isMobileHook;
 
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
     const handleResize = () => {
-      const width = window.innerWidth;
-      const height = window.innerHeight;
-      setIsMobile(width < 1024);
-      setViewportSize({ width, height });
+      setViewportSize({ width: window.innerWidth, height: window.innerHeight });
     };
 
     handleResize();
@@ -125,13 +120,6 @@ export function SessionLayout({
           </div>
         )}
       </div>
-
-      {/* Custom Styles to enforce no scroll and fit */}
-      <style jsx global>{`
-        body { overflow: hidden !important; height: 100vh !important; width: 100vw !important; }
-        .min-w-0 { min-width: 0; }
-        .min-h-0 { min-height: 0; }
-      `}</style>
     </div>
   );
 }

@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { getAudioEngine } from '@/lib/audio';
+import { useAudioLevel } from '@/hooks/useAudioLevel';
+import { useIsMobile } from '@/hooks/useMediaQuery';
 
 interface AuroraBackgroundProps {
   activeChakraHue: number;
@@ -10,39 +11,9 @@ interface AuroraBackgroundProps {
 }
 
 export function AuroraBackground({ activeChakraHue, ambientVolumes, isPlaying }: AuroraBackgroundProps) {
-  const [audioLevel, setAudioLevel] = useState(0);
-  const freqDataRef = useRef(new Uint8Array(32));
-  const rafId = useRef<number | null>(null);
+  const audioLevel = useAudioLevel(isPlaying);
 
-  useEffect(() => {
-    const engine = getAudioEngine();
-    if (!engine) return;
-
-    const getLevels = () => {
-      if (isPlaying) {
-        engine.getFrequencyData(freqDataRef.current);
-        const level = freqDataRef.current.reduce((a, b) => a + b, 0) / 32 / 255;
-        setAudioLevel(level);
-      } else {
-        setAudioLevel(0);
-      }
-      rafId.current = requestAnimationFrame(getLevels);
-    };
-
-    rafId.current = requestAnimationFrame(getLevels);
-    return () => {
-      if (rafId.current) cancelAnimationFrame(rafId.current);
-    };
-  }, [isPlaying]);
-
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    setIsMobile(window.innerWidth < 768);
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  const isMobile = useIsMobile(768);
 
   // Shift hue: water pushes toward blue (210), fire toward red (0), nature toward green (120)
   const waterLevel = ((ambientVolumes.water || 0) + (ambientVolumes.ocean || 0) + (ambientVolumes.waterfall || 0)) / 3;

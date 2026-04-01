@@ -5,6 +5,8 @@ import { motion } from 'motion/react';
 import { Mandala } from './Mandala';
 import { getAudioEngine } from '@/lib/audio';
 
+import { useAudioLevel } from '@/hooks/useAudioLevel';
+
 interface MandalaCardProps {
   hue: number;
   isPlaying: boolean;
@@ -21,7 +23,7 @@ interface MandalaCardProps {
   onToggleFullScreen?: () => void;
 }
 
-export function MandalaCard({
+export const MandalaCard = React.memo(function MandalaCard({
   chakraId,
   chakraColor,
   chakraPalette,
@@ -31,28 +33,7 @@ export function MandalaCard({
   onToggleFullScreen,
 }: MandalaCardProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [glowIntensity, setGlowIntensity] = useState(0);
-  const audioDataRef = useRef(new Uint8Array(32));
-  const rafRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    const engine = getAudioEngine();
-    if (!engine || !containerRef.current) return;
-
-    const updateGlow = () => {
-      if (isPlaying && engine) {
-        engine.getFrequencyData(audioDataRef.current);
-        const average = audioDataRef.current.reduce((a, b) => a + b, 0) / audioDataRef.current.length / 255;
-        setGlowIntensity(average);
-      } else {
-        setGlowIntensity(0);
-      }
-      rafRef.current = requestAnimationFrame(updateGlow);
-    };
-
-    rafRef.current = requestAnimationFrame(updateGlow);
-    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
-  }, [isPlaying]);
+  const glowIntensity = useAudioLevel(isPlaying);
 
   const hexToRgb = (hex: string) => {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -104,4 +85,4 @@ export function MandalaCard({
       <motion.div className="absolute inset-0 rounded-[40px] pointer-events-none" animate={{ opacity: glowIntensity * 0.2 }} transition={{ duration: 0.1 }} style={{ border: `1px solid rgba(${rgbString}, 0.1)`, boxShadow: `inset 0 0 50px rgba(${rgbString}, 0.05)` }} />
     </motion.div>
   );
-}
+});

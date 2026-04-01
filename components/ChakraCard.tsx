@@ -1,12 +1,7 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { Power, Volume2 } from 'lucide-react';
 
-interface Chakra {
-  id: string;
-  name: string;
-  frequency: number;
-  color: string;
-}
+import type { Chakra } from '@/lib/types';
 
 interface ChakraCardProps {
   chakra: Chakra;

@@ -16,27 +16,29 @@ import { ElementCard } from './ElementCard';
 import { PresetTemplates } from './PresetTemplates';
 import { AMBIENT_ELEMENTS, AMBIENT_CATEGORIES } from '@/lib/ambientElements';
 
+import type { Chakra, SavedTemplate } from '@/lib/types';
+
 interface SidebarProps {
-  chakras: any[];
-  activeChakra: any;
+  chakras: Chakra[];
+  activeChakra: Chakra;
   isChakraOn: boolean;
   chakraVolume: number;
   onChakraVolumeChange: (vol: number) => void;
   onChakraToggle: (type: 'on' | 'off') => void;
-  onChakraSelect: (chakra: any) => void;
+  onChakraSelect: (chakra: Chakra) => void;
   ambientVolumes: Record<string, number>;
   onAmbientVolumeChange: (id: string, vol: number) => void;
   onClearAll: () => void;
   masterVolume: number;
   onMasterVolumeChange: (vol: number) => void;
-  savedTemplates: any[];
+  savedTemplates: SavedTemplate[];
   onSaveTemplate: () => void;
-  onLoadTemplate: (template: any) => void;
-  onDeleteTemplate: (id: number) => void;
+  onLoadTemplate: (template: SavedTemplate) => void;
+  onDeleteTemplate: (id: string | number) => void;
   isMobile?: boolean;
 }
 
-export function Sidebar({
+export const Sidebar = React.memo(function Sidebar({
   chakras,
   activeChakra,
   isChakraOn,
@@ -269,4 +271,4 @@ export function Sidebar({
       </div>
     </aside>
   );
-}
+});

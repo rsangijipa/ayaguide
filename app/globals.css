@@ -1,21 +1,16 @@
 @import "tailwindcss";
 
 @layer base {
-  @font-face {
-    font-family: 'Outfit';
-    src: url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+  :root {
+    --chakra-primary: 255 255 255;
+    --chakra-secondary: #888888;
+    --chakra-accent: #444444;
+    --chakra-soft: rgba(255, 255, 255, 0.1);
   }
 
   body {
     @apply font-sans antialiased bg-[#020202] text-white selection:bg-white/20 overflow-hidden;
-    font-family: 'Outfit', sans-serif;
-  }
-
-  :root {
-    --chakra-primary: #ffffff;
-    --chakra-secondary: #888888;
-    --chakra-accent: #444444;
-    --chakra-soft: rgba(255, 255, 255, 0.1);
+    font-family: var(--font-outfit), sans-serif;
   }
 }
 

@@ -1,18 +1,28 @@
-import type {Metadata} from 'next';
-import './globals.css'; // Global styles
+import type { Metadata } from 'next';
+import { Outfit } from 'next/font/google';
+import './globals.css';
+
+const outfit = Outfit({ 
+  subsets: ['latin'],
+  variable: '--font-outfit',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
-  title: 'AyaGuide | Sacred Session Companion',
-  description: 'Interactive Mandala and Audio Companion for Sacred Sessions',
-  icons: {
-    icon: 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧘</text></svg>',
-  },
+  title: 'AyaGuide | Portal de Meditação Sonora',
+  description: 'Uma experiência imersiva de meditação combinando frequências dos chakras, 16 sons da natureza e mandalas dinâmicas.',
 };
 
-export default function RootLayout({children}: {children: React.ReactNode}) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body suppressHydrationWarning>{children}</body>
+    <html lang="pt-BR">
+      <body className={`${outfit.variable} font-sans bg-[#020202] text-white selection:bg-white/20 dark overflow-hidden w-screen h-screen`}>
+        {children}
+      </body>
     </html>
   );
 }

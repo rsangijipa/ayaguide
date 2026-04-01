@@ -1,24 +1,48 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# 🧘 AyaGuide | Portal de Meditação Sonora
 
-# Run and deploy your AI Studio app
+**AyaGuide** é uma aplicação web imersiva de meditação sonora (Sacred Session Companion). A plataforma combina as frequências sagradas dos chakras com 16 sons ambientais da natureza e um sistema de geometria visual dinâmica que reage ao áudio.
 
-This contains everything you need to run your app locally.
+## 🌟 Funcionalidades Principais
 
-View your app in AI Studio: https://ai.studio/apps/3edd11bf-9777-4938-aabc-ff0a923eea4f
+* **7 Frequências Sagradas (Chakras)**: De 396Hz (Básico) a 963Hz (Coronário), sintetizadas em tempo real.
+* **16 Elementos da Natureza**: Misture sons de água, fogo, vento e floresta, além de instrumentos místicos.
+* **Mandala Dinâmica Sensível ao Som**: Uma geometria central que pulsa e se altera com as ondas sonoras e a influência de elementos.
+* **Aurora Cromática Ponderada**: O background altera sua cor baseado no chakra ativo e nos elementos naturais selecionados (ex: água adiciona tons azuis, fogo tons quentes).
+* **Guia de Respiração Visual**: Padrão cadenciado (Inspire 4s, Retenha 4s, Expire 6s).
+* **Biblioteca Sagrada**: Salve seus mixes preferidos na memória do navegador.
 
-## Run Locally
+## 🚀 Como Executar Localmente
 
-**Prerequisites:**  Node.js
+### Pré-requisitos
 
+* Node.js v18 ou superior
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+### Passos
 
-## Deploy no Vercel
+1. Instale as dependências:
 
-Consulte o guia completo em [DEPLOY_VERCEL.md](DEPLOY_VERCEL.md) para colocar sua aplicação online.
+   ```bash
+   npm install
+   ```
+
+2. Inicialize o servidor de desenvolvimento local:
+
+   ```bash
+   npm run dev
+   ```
+
+3. Abra `http://localhost:3000` em seu navegador. (Não é necessário configurar variáveis de ambiente `.env`).
+
+## 🖥 Atalhos de Teclado (HUD Mode)
+
+Durante as sessões (especialmente em Tela Cheia), você pode utilizar as teclas:
+
+* `Space`: Tocar / Pausar a sessão.
+* `M`: Mudo (Liga/desliga todo o som).
+* `F`: Tela cheia (Alternar).
+* `B`: Alternar Guia de Respiração.
+* `Esc`: Sair do modo tela cheia.
+
+## 📦 Deploy na Vercel
+
+O projeto está 100% otimizado (`output: 'standalone'`) para o deploy sem complexidades no Vercel. Siga as instruções em [DEPLOY_VERCEL.md](DEPLOY_VERCEL.md) para enviar para produção.
