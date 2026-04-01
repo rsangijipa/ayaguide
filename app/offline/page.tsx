@@ -7,7 +7,15 @@ import { AuroraBackground } from '@/components/AuroraBackground';
 
 export default function OfflinePage() {
   return (
-    <div className="relative min-h-screen w-full flex items-center justify-center bg-[#020202] text-white overflow-hidden px-6">
+    <div
+      className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-[#020202] px-6 text-white"
+      style={{
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.5rem)',
+        paddingRight: 'calc(env(safe-area-inset-right, 0px) + 1.5rem)',
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)',
+        paddingLeft: 'calc(env(safe-area-inset-left, 0px) + 1.5rem)',
+      }}
+    >
       <AuroraBackground activeChakraHue={210} ambientVolumes={{}} isPlaying={false} />
 
       <div className="relative z-10 max-w-xl text-center">

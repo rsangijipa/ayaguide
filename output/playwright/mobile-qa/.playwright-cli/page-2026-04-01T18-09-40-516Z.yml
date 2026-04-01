@@ -1,0 +1,100 @@
+- generic [ref=e1]:
+  - generic [ref=e42]:
+    - generic:
+      - img "Fundo de ambiente animado com partículas e camadas de profundidade"
+    - generic [ref=e43]:
+      - generic [ref=e44]:
+        - button "Expandir biblioteca" [ref=e45] [cursor=pointer]:
+          - generic [ref=e46]:
+            - img [ref=e48]
+            - generic [ref=e50]: Recursos & Biblioteca
+        - complementary [ref=e52]:
+          - generic [ref=e53]:
+            - generic [ref=e55]: Controle Mestre
+            - generic [ref=e56]:
+              - generic [ref=e57]:
+                - generic [ref=e58]:
+                  - generic [ref=e59]:
+                    - img [ref=e60]
+                    - generic [ref=e64]: Volume Mestre
+                  - generic [ref=e65]: 70%
+                - slider "Volume mestre" [ref=e67] [cursor=pointer]: "0.7"
+              - generic [ref=e68]:
+                - generic [ref=e69]:
+                  - generic [ref=e70]:
+                    - img [ref=e71]
+                    - generic [ref=e79]: Foco Dinamico
+                  - generic [ref=e80]: 0%
+                - slider "Filtro de foco" [ref=e82] [cursor=pointer]: "0"
+          - generic [ref=e83]:
+            - button "Frequencias Sagradas" [ref=e85]:
+              - generic [ref=e86]:
+                - heading "Frequencias Sagradas" [level=2] [ref=e87]:
+                  - img [ref=e88]
+                  - text: Frequencias Sagradas
+                - img [ref=e91]
+            - button "Elementos da Natureza" [ref=e94]:
+              - generic [ref=e95]:
+                - heading "Elementos da Natureza" [level=2] [ref=e96]:
+                  - generic [ref=e97]: 🌿
+                  - text: Elementos da Natureza
+                - img [ref=e98]
+            - button "Ondas Cerebrais" [ref=e101]:
+              - generic [ref=e102]:
+                - heading "Ondas Cerebrais" [level=2] [ref=e103]:
+                  - img [ref=e104]
+                  - text: Ondas Cerebrais
+                - img [ref=e113]
+            - button "Guia de Respiracao" [ref=e116]:
+              - generic [ref=e117]:
+                - heading "Guia de Respiracao" [level=2] [ref=e118]:
+                  - generic [ref=e119]: 🌬️
+                  - text: Guia de Respiracao
+                - img [ref=e121]
+            - button "Jornadas Guiadas" [ref=e124]:
+              - generic [ref=e125]:
+                - heading "Jornadas Guiadas" [level=2] [ref=e126]:
+                  - img [ref=e127]
+                  - text: Jornadas Guiadas
+                - img [ref=e130]
+            - generic [ref=e133]:
+              - button "Abrir biblioteca de mixes" [ref=e134]:
+                - generic [ref=e135]:
+                  - heading "Biblioteca Sagrada" [level=2] [ref=e136]:
+                    - img [ref=e137]
+                    - text: Biblioteca Sagrada
+                  - img [ref=e140]
+              - button "Salvar mix atual" [ref=e142]:
+                - img [ref=e143]
+      - generic [ref=e144]:
+        - banner [ref=e146]:
+          - button "Abrir seletor de duracao" [ref=e148] [cursor=pointer]:
+            - img [ref=e150]
+          - generic [ref=e153]:
+            - button "Alterar duracao da sessao" [ref=e154]: 01:00:00
+            - button "Entrar em tela cheia" [ref=e155]:
+              - img [ref=e156]
+          - generic [ref=e161]:
+            - generic [ref=e162]:
+              - button "Ativar guia de respiracao" [ref=e163]:
+                - img [ref=e164]
+              - button "Abrir tecnicas de respiracao" [ref=e168]:
+                - img [ref=e169]
+            - button "Iniciar sessao" [ref=e171]:
+              - img [ref=e172]
+            - button "Encerrar sessao" [expanded] [active] [ref=e174]:
+              - img [ref=e175]
+            - dialog "Confirmar encerramento da sessao" [ref=e184]:
+              - generic [ref=e185]:
+                - img [ref=e187]
+                - generic [ref=e189]:
+                  - paragraph [ref=e190]: Encerrar Sessao
+                  - paragraph [ref=e191]: A sessao atual sera finalizada e o mix em andamento sera interrompido.
+              - generic [ref=e192]:
+                - button "Cancelar" [ref=e193]:
+                  - img [ref=e194]
+                  - text: Cancelar
+                - button "Encerrar" [ref=e197]
+        - generic [ref=e183]:
+          - img "Mandala animada reagindo aos sons da meditação"
+  - alert [ref=e41]

@@ -1,0 +1,29 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e5]:
+    - generic:
+      - generic:
+        - img
+    - generic [ref=e6]:
+      - generic [ref=e8]:
+        - img [ref=e11]
+        - heading "AyaGuide" [level=1] [ref=e13]
+        - paragraph [ref=e15]: Portal de Expansao Lunar
+      - generic [ref=e16]:
+        - button "Imersao Divina Experiencia completa com audio espacial e visual reativo." [ref=e17]:
+          - generic [ref=e18]:
+            - img [ref=e20]
+            - generic [ref=e23]:
+              - heading "Imersao Divina" [level=3] [ref=e24]
+              - paragraph [ref=e25]: Experiencia completa com audio espacial e visual reativo.
+        - button "Silencio Puro Foco em performance. Visual minimalista e audio preservado." [ref=e26]:
+          - generic [ref=e27]:
+            - img [ref=e29]
+            - generic [ref=e31]:
+              - heading "Silencio Puro" [level=3] [ref=e32]
+              - paragraph [ref=e33]: Foco em performance. Visual minimalista e audio preservado.
+      - button "Transcender" [ref=e35]:
+        - generic [ref=e36]:
+          - generic [ref=e37]: Transcender
+          - img [ref=e38]
+      - paragraph [ref=e40]: Encontre seu Centro
+  - alert [ref=e41]

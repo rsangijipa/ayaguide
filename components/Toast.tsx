@@ -45,7 +45,8 @@ export function ToastContainer() {
 
   return (
     <div
-      className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[200] flex flex-col items-center gap-2 pointer-events-none"
+      className="fixed left-1/2 z-[200] flex -translate-x-1/2 flex-col items-center gap-2 pointer-events-none"
+      style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 2rem)' }}
       aria-live="polite"
       aria-atomic="true"
       aria-relevant="additions text"
