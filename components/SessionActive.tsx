@@ -14,6 +14,7 @@ import { Pause, Play, Clock, Maximize2, Minimize2, Wind as WindIcon, LogOut, Che
 import { ToastContainer, showToast } from '@/components/Toast';
 import { TimerDropdown } from '@/components/TimerDropdown';
 import { getAudioMixer } from '@/lib/audioMixer';
+import { useMediaSession } from '@/hooks/useMediaSession';
 
 // Heavy components lazily loaded inside the active session
 const MandalaCard = dynamic(() => import('@/components/MandalaCard').then(m => m.MandalaCard), { ssr: false });
@@ -49,6 +50,9 @@ function SessionIntegrator() {
     timeLeft: s.timeLeft,
     togglePlay: s.togglePlay
   })));
+
+  // Registrar controles de mídia para notificações do sistema
+  useMediaSession();
 
   // Import hooks for side effects
   const { handleAdvanceJourneyPhase } = useJourneyTimer();

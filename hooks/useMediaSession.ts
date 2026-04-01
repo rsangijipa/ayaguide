@@ -7,6 +7,13 @@ import { JOURNEYS, getJourney } from '@/lib/journeys';
 import { CHAKRAS } from '@/lib/constants';
 import type { Chakra } from '@/lib/types';
 
+/**
+ * useMediaSession Hook
+ * 
+ * Sincroniza o estado da meditação com a Media Session API do navegador.
+ * Permite que o usuário controle a reprodução e veja metadados (incluindo o chakra ativo)
+ * diretamente na central de notificações do sistema (Android/iOS/Desktop).
+ */
 export function useMediaSession() {
   const {
     isPlaying,
@@ -15,6 +22,7 @@ export function useMediaSession() {
     togglePlay,
     resetSession,
     advanceJourneyPhase,
+    sessionDuration,
     timeLeft,
   } = useSessionStore(
     useShallow((s) => ({
@@ -24,6 +32,7 @@ export function useMediaSession() {
       togglePlay: s.togglePlay,
       resetSession: s.resetSession,
       advanceJourneyPhase: s.advanceJourneyPhase,
+      sessionDuration: s.sessionDuration,
       timeLeft: s.timeLeft,
     }))
   );
@@ -47,7 +56,6 @@ export function useMediaSession() {
         phaseTimeLeft: nextPhase.duration,
       });
     } else {
-      // End of journey or just restart? Let's say stop.
       resetSession();
     }
   }, [activeJourney, activeChakra, advanceJourneyPhase, resetSession]);
@@ -71,7 +79,6 @@ export function useMediaSession() {
         phaseTimeLeft: prevPhase.duration,
       });
     } else {
-      // Re-start current phase if it's the first one
       const currentPhase = journey.phases[0];
       const currentChakra = (CHAKRAS as Chakra[]).find(c => c.id === currentPhase.chakraId) || activeChakra;
       advanceJourneyPhase({
@@ -85,13 +92,11 @@ export function useMediaSession() {
     }
   }, [activeJourney, activeChakra, advanceJourneyPhase]);
 
+  // 1. Handlers de Ação e Metadados
   useEffect(() => {
     if (typeof window === 'undefined' || !('mediaSession' in navigator)) return;
 
-    // 1. Update Playback State
-    navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
-
-    // 2. Update Metadata
+    // Atualizar Metadados
     let title = "Meditação Livre";
     let album = activeChakra?.name || "Chakra";
     let artworkUrl = `/images/chakras/${activeChakra?.id || 'root'}.png`;
@@ -114,26 +119,21 @@ export function useMediaSession() {
       ]
     });
 
-    // 3. Action Handlers
+    // Handlers de Ações
     const handlers: [MediaSessionAction, MediaSessionActionHandler][] = [
-      ['play', () => { if (!isPlaying) togglePlay(); }],
-      ['pause', () => { if (isPlaying) togglePlay(); }],
+      ['play', () => { if (!useSessionStore.getState().isPlaying) togglePlay(); }],
+      ['pause', () => { if (useSessionStore.getState().isPlaying) togglePlay(); }],
       ['stop', () => resetSession()],
       ['nexttrack', handleNextPhase],
       ['previoustrack', handlePrevPhase],
-      ['seekbackward', () => { /* Optional: Skip 10s if we want to handle internal timer */ }],
-      ['seekforward', () => { /* Optional: Skip 10s */ }],
     ];
 
     for (const [action, handler] of handlers) {
       try {
         navigator.mediaSession.setActionHandler(action, handler);
-      } catch (error) {
-        console.warn(`The media session action "${action}" is not supported yet.`);
-      }
+      } catch (error) {}
     }
 
-    // Cleanup handlers (important to avoid leaks or multiple registrations)
     return () => {
       for (const [action] of handlers) {
         try {
@@ -142,7 +142,6 @@ export function useMediaSession() {
       }
     };
   }, [
-    isPlaying, 
     activeChakra, 
     activeJourney, 
     togglePlay, 
@@ -150,6 +149,30 @@ export function useMediaSession() {
     handleNextPhase, 
     handlePrevPhase
   ]);
+
+  // 2. Atualizar Estado de Reprodução e Posição (Timer)
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('mediaSession' in navigator)) return;
+
+    const mediaSession = navigator.mediaSession;
+    mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+
+    // Atualizar posição de reprodução na notificação
+    const durationInSeconds = sessionDuration * 60;
+    const positionInSeconds = Math.max(0, Math.min(durationInSeconds, durationInSeconds - timeLeft));
+
+    if (!isNaN(durationInSeconds) && durationInSeconds > 0) {
+      try {
+        mediaSession.setPositionState({
+          duration: durationInSeconds,
+          playbackRate: 1,
+          position: positionInSeconds,
+        });
+      } catch (error) {
+        // Alguns browsers podem falhar se a duração for inconsistente
+      }
+    }
+  }, [isPlaying, sessionDuration, timeLeft]);
 
   return null;
 }
