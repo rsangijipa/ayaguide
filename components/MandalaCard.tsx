@@ -21,6 +21,7 @@ interface MandalaCardProps {
   ambientVolumes: Record<string, number>;
   isFullScreen?: boolean;
   onToggleFullScreen?: () => void;
+  children?: React.ReactNode;
 }
 
 export const MandalaCard = React.memo(function MandalaCard({
@@ -31,6 +32,7 @@ export const MandalaCard = React.memo(function MandalaCard({
   isPlaying,
   isFullScreen,
   onToggleFullScreen,
+  children,
 }: MandalaCardProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const glowIntensity = useAudioLevel(isPlaying);
@@ -49,7 +51,7 @@ export const MandalaCard = React.memo(function MandalaCard({
       initial={{ scale: 0.98, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       transition={{ duration: 0.8, ease: 'easeOut' }}
-      className={`flex-1 w-full h-full relative flex items-center justify-center p-4 md:p-8 rounded-[40px] border border-white/5 shadow-2xl transition-all duration-700 ${isFullScreen ? 'm-0 rounded-none z-[60]' : 'z-10'}`}
+      className={`flex-1 w-full h-full relative flex items-center justify-center p-4 md:p-8 rounded-[40px] border border-white/5 shadow-2xl transition-all duration-700 ${isFullScreen ? 'm-0 rounded-none z-10' : 'z-10'}`}
       style={{ background: `linear-gradient(135deg, rgba(${rgbString}, 0.04) 0%, rgba(${rgbString}, 0.01) 50%, rgba(${rgbString}, 0.03) 100%)` }}
     >
       <motion.div className="absolute inset-0 pointer-events-none" animate={{ opacity: [0.1, 0.2, 0.1] }} transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }} style={{ background: `radial-gradient(circle at 30% 50%, rgba(${rgbString}, 0.1) 0%, transparent 50%)` }} />
@@ -83,6 +85,14 @@ export const MandalaCard = React.memo(function MandalaCard({
       </div>
 
       <motion.div className="absolute inset-0 rounded-[40px] pointer-events-none" animate={{ opacity: glowIntensity * 0.2 }} transition={{ duration: 0.1 }} style={{ border: `1px solid rgba(${rgbString}, 0.1)`, boxShadow: `inset 0 0 50px rgba(${rgbString}, 0.05)` }} />
+      
+      {children && (
+        <div className="absolute inset-x-0 bottom-6 z-20 flex justify-center px-4 pointer-events-none">
+          <div className="pointer-events-auto w-full max-w-xl">
+            {children}
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 });

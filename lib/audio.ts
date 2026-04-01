@@ -9,6 +9,15 @@ export const CHAKRA_FREQUENCIES: Record<string, number> = {
   crown: 963,
 };
 
+// Binaural beat frequency deltas for each brain state
+export const BINAURAL_DELTAS: Record<string, { delta: number; baseFreq: number; label: string }> = {
+  delta: { delta: 2, baseFreq: 100, label: 'Delta (0.5–4 Hz) — Sono Profundo' },
+  theta: { delta: 6, baseFreq: 150, label: 'Theta (4–8 Hz) — Meditação' },
+  alpha: { delta: 10, baseFreq: 200, label: 'Alpha (8–14 Hz) — Relaxamento' },
+  beta:  { delta: 20, baseFreq: 250, label: 'Beta (14–30 Hz) — Foco' },
+  gamma: { delta: 40, baseFreq: 300, label: 'Gamma (30–50 Hz) — Percepção' },
+};
+
 class AudioEngine {
   private ctx: AudioContext | null = null;
   private masterGain: GainNode | null = null;
@@ -23,6 +32,14 @@ class AudioEngine {
   private sources: Map<HTMLMediaElement, MediaElementAudioSourceNode> = new Map();
   private reverbNode: ConvolverNode | null = null;
   private isInitialized = false;
+
+  // Binaural beat nodes
+  private binauralOscL: OscillatorNode | null = null;
+  private binauralOscR: OscillatorNode | null = null;
+  private binauralGain: GainNode | null = null;
+  private binauralPanL: StereoPannerNode | null = null;
+  private binauralPanR: StereoPannerNode | null = null;
+  private currentBinauralState: string = 'off';
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -57,11 +74,6 @@ class AudioEngine {
 
     this.createReverb();
     this.isInitialized = true;
-    
-    // Resume context if suspended (browser policy)
-    if (this.ctx.state === 'suspended') {
-      this.ctx.resume();
-    }
   }
 
   async createReverb() {
@@ -203,6 +215,92 @@ class AudioEngine {
     if (this.ctx && this.ctx.state === 'suspended') {
       this.ctx.resume();
     }
+  }
+
+  // ============ Binaural Beats ============
+
+  playBinaural(stateId: string, volume: number = 0.5) {
+    if (!this.ctx) this.init();
+    if (!this.ctx || !this.masterGain) return;
+
+    const config = BINAURAL_DELTAS[stateId];
+    if (!config) { this.stopBinaural(); return; }
+
+    // If same state, just update volume
+    if (this.currentBinauralState === stateId && this.binauralGain) {
+      this.setBinauralVolume(volume);
+      return;
+    }
+
+    // Stop existing
+    this.stopBinaural(0.1);
+
+    const baseFreq = config.baseFreq;
+    const delta = config.delta;
+
+    // Shared gain
+    this.binauralGain = this.ctx.createGain();
+    this.binauralGain.gain.value = 0;
+    this.binauralGain.connect(this.masterGain);
+
+    // Left oscillator: base frequency
+    this.binauralOscL = this.ctx.createOscillator();
+    this.binauralOscL.type = 'sine';
+    this.binauralOscL.frequency.value = baseFreq;
+
+    this.binauralPanL = this.ctx.createStereoPanner();
+    this.binauralPanL.pan.value = -1;
+    this.binauralOscL.connect(this.binauralPanL);
+    this.binauralPanL.connect(this.binauralGain);
+
+    // Right oscillator: base + delta
+    this.binauralOscR = this.ctx.createOscillator();
+    this.binauralOscR.type = 'sine';
+    this.binauralOscR.frequency.value = baseFreq + delta;
+
+    this.binauralPanR = this.ctx.createStereoPanner();
+    this.binauralPanR.pan.value = 1;
+    this.binauralOscR.connect(this.binauralPanR);
+    this.binauralPanR.connect(this.binauralGain);
+
+    this.binauralOscL.start();
+    this.binauralOscR.start();
+
+    // Fade in
+    this.binauralGain.gain.setTargetAtTime(volume * 0.7, this.ctx.currentTime, 0.3);
+    this.currentBinauralState = stateId;
+  }
+
+  stopBinaural(fadeTime: number = 0.5) {
+    if (this.binauralGain && this.ctx) {
+      this.binauralGain.gain.setTargetAtTime(0, this.ctx.currentTime, fadeTime / 3);
+    }
+
+    const oscs = [this.binauralOscL, this.binauralOscR];
+    const panners = [this.binauralPanL, this.binauralPanR];
+    this.binauralOscL = null;
+    this.binauralOscR = null;
+    this.binauralPanL = null;
+    this.binauralPanR = null;
+    this.currentBinauralState = 'off';
+
+    setTimeout(() => {
+      oscs.forEach(osc => {
+        if (osc) { try { osc.stop(); } catch {} osc.disconnect(); }
+      });
+      panners.forEach(p => { if (p) p.disconnect(); });
+      if (this.binauralGain) { this.binauralGain.disconnect(); this.binauralGain = null; }
+    }, fadeTime * 1000);
+  }
+
+  setBinauralVolume(vol: number) {
+    if (this.binauralGain && this.ctx) {
+      this.binauralGain.gain.setTargetAtTime(vol * 0.7, this.ctx.currentTime, 0.1);
+    }
+  }
+
+  getBinauralState(): string {
+    return this.currentBinauralState;
   }
 }
 

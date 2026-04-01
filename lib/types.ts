@@ -27,6 +27,24 @@ export interface SavedTemplate {
   description?: string;
 }
 
+export interface JourneyPhase {
+  chakraId: string;
+  ambientVolumes: Record<string, number>;
+  breathPatternId?: string;
+  duration: number; // seconds
+  message: string;
+  chakraVolume: number;
+}
+
+export interface ActiveJourney {
+  journeyId: string;
+  currentPhaseIndex: number;
+  phaseTimeLeft: number; // seconds left in current phase
+  totalPhasesCount: number;
+}
+
+export type BinauralState = 'off' | 'delta' | 'theta' | 'alpha' | 'beta' | 'gamma';
+
 export interface SessionState {
   isPlaying: boolean;
   sessionDuration: number;
@@ -43,4 +61,12 @@ export interface SessionState {
   showTimerPicker: boolean;
   showSaveModal: boolean;
   breathingActive: boolean;
+  // New: Breathing pattern
+  breathingPatternId: string;
+  showBreathingPicker: boolean;
+  // New: Binaural beats
+  binauralState: BinauralState;
+  binauralVolume: number;
+  // New: Guided journeys
+  activeJourney: ActiveJourney | null;
 }

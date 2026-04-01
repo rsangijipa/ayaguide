@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
-import { Chakra, SavedTemplate, SessionState } from './types';
+import { Chakra, SavedTemplate, SessionState, BinauralState, ActiveJourney } from './types';
 import { CHAKRAS } from './constants';
 
 export type SessionAction =
@@ -23,14 +23,26 @@ export type SessionAction =
   | { type: 'TOGGLE_TIMER_PICKER' }
   | { type: 'TOGGLE_SAVE_MODAL' }
   | { type: 'TOGGLE_BREATHING_GUIDE' }
-  | { type: 'CLEAR_ALL_AMBIENTS' };
+  | { type: 'CLEAR_ALL_AMBIENTS' }
+  // New: Breathing pattern
+  | { type: 'SET_BREATHING_PATTERN'; payload: string }
+  | { type: 'TOGGLE_BREATHING_PICKER' }
+  // New: Binaural beats
+  | { type: 'SET_BINAURAL_STATE'; payload: BinauralState }
+  | { type: 'SET_BINAURAL_VOLUME'; payload: number }
+  // New: Journey
+  | { type: 'START_JOURNEY'; payload: ActiveJourney }
+  | { type: 'ADVANCE_JOURNEY_PHASE'; payload: { phaseIndex: number; chakra: Chakra; ambientVolumes: Record<string, number>; chakraVolume: number; breathPatternId?: string; phaseTimeLeft: number } }
+  | { type: 'JOURNEY_PHASE_TICK'; payload: number }
+  | { type: 'EXIT_JOURNEY' }
+  | { type: 'SET_AMBIENT_VOLUMES_BULK'; payload: Record<string, number> };
 
 const initialState: SessionState = {
   isPlaying: false,
   sessionDuration: 60, // minutes
   timeLeft: 3600, // seconds
   activeChakra: (CHAKRAS as Chakra[])[3], // Heart by default
-  isChakraOn: true,
+  isChakraOn: false,
   chakraVolume: 0.6,
   ambientVolumes: {},
   masterVolume: 0.7,
@@ -41,6 +53,12 @@ const initialState: SessionState = {
   showTimerPicker: false,
   showSaveModal: false,
   breathingActive: false,
+  // New defaults
+  breathingPatternId: 'calm',
+  showBreathingPicker: false,
+  binauralState: 'off',
+  binauralVolume: 0.5,
+  activeJourney: null,
 };
 
 function sessionReducer(state: SessionState, action: SessionAction): SessionState {
@@ -72,12 +90,14 @@ function sessionReducer(state: SessionState, action: SessionAction): SessionStat
       }
       return { ...state, ambientVolumes: newVols };
     }
+    case 'SET_AMBIENT_VOLUMES_BULK':
+      return { ...state, ambientVolumes: action.payload };
     case 'SET_MASTER_VOLUME':
       return { ...state, masterVolume: action.payload, isMuted: action.payload === 0 };
     case 'TOGGLE_MUTE':
       return { ...state, isMuted: !state.isMuted };
     case 'START_EXPERIENCE':
-      return { ...state, hasStarted: true, isPlaying: true };
+      return { ...state, hasStarted: true, isPlaying: false };
     case 'TOGGLE_FULLSCREEN':
       return { ...state, isFullScreen: !state.isFullScreen };
     case 'ADD_SAVED_TEMPLATE':
@@ -108,6 +128,49 @@ function sessionReducer(state: SessionState, action: SessionAction): SessionStat
       return { ...state, breathingActive: !state.breathingActive };
     case 'CLEAR_ALL_AMBIENTS':
       return { ...state, ambientVolumes: {}, isChakraOn: false };
+
+    // --- New: Breathing pattern ---
+    case 'SET_BREATHING_PATTERN':
+      return { ...state, breathingPatternId: action.payload };
+    case 'TOGGLE_BREATHING_PICKER':
+      return { ...state, showBreathingPicker: !state.showBreathingPicker };
+
+    // --- New: Binaural beats ---
+    case 'SET_BINAURAL_STATE':
+      return { ...state, binauralState: action.payload };
+    case 'SET_BINAURAL_VOLUME':
+      return { ...state, binauralVolume: action.payload };
+
+    // --- New: Guided journeys ---
+    case 'START_JOURNEY':
+      return { ...state, activeJourney: action.payload };
+    case 'ADVANCE_JOURNEY_PHASE': {
+      const { phaseIndex, chakra, ambientVolumes, chakraVolume, breathPatternId, phaseTimeLeft } = action.payload;
+      return {
+        ...state,
+        activeChakra: chakra,
+        ambientVolumes,
+        chakraVolume,
+        isChakraOn: true,
+        breathingPatternId: breathPatternId || state.breathingPatternId,
+        activeJourney: state.activeJourney ? {
+          ...state.activeJourney,
+          currentPhaseIndex: phaseIndex,
+          phaseTimeLeft,
+        } : null,
+      };
+    }
+    case 'JOURNEY_PHASE_TICK':
+      return state.activeJourney ? {
+        ...state,
+        activeJourney: {
+          ...state.activeJourney,
+          phaseTimeLeft: action.payload,
+        }
+      } : state;
+    case 'EXIT_JOURNEY':
+      return { ...state, activeJourney: null };
+
     default:
       return state;
   }

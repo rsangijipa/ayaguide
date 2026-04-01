@@ -10,13 +10,17 @@ import {
   ChevronDown,
   Activity,
   Volume2,
+  Brain,
+  Compass,
 } from 'lucide-react';
 import { ChakraCard } from './ChakraCard';
 import { ElementCard } from './ElementCard';
 import { PresetTemplates } from './PresetTemplates';
+import { BinauralPanel } from './BinauralPanel';
+import { JourneySelector } from './JourneyPlayer';
 import { AMBIENT_ELEMENTS, AMBIENT_CATEGORIES } from '@/lib/ambientElements';
 
-import type { Chakra, SavedTemplate } from '@/lib/types';
+import type { Chakra, SavedTemplate, BinauralState } from '@/lib/types';
 
 interface SidebarProps {
   chakras: Chakra[];
@@ -36,6 +40,14 @@ interface SidebarProps {
   onLoadTemplate: (template: SavedTemplate) => void;
   onDeleteTemplate: (id: string | number) => void;
   isMobile?: boolean;
+  // Binaural
+  binauralState: BinauralState;
+  binauralVolume: number;
+  onBinauralStateChange: (state: BinauralState) => void;
+  onBinauralVolumeChange: (vol: number) => void;
+  // Journeys
+  onStartJourney: (journeyId: string) => void;
+  isJourneyActive: boolean;
 }
 
 export const Sidebar = React.memo(function Sidebar({
@@ -56,9 +68,15 @@ export const Sidebar = React.memo(function Sidebar({
   onLoadTemplate,
   onDeleteTemplate,
   isMobile = false,
+  binauralState,
+  binauralVolume,
+  onBinauralStateChange,
+  onBinauralVolumeChange,
+  onStartJourney,
+  isJourneyActive,
 }: SidebarProps) {
-  const [expandedSection, setExpandedSection] = useState<'chakras' | 'elements' | 'templates' | null>('chakras');
-  const [expandedCategory, setExpandedCategory] = useState<string | null>('water');
+  const [expandedSection, setExpandedSection] = useState<'chakras' | 'elements' | 'templates' | 'binaural' | 'journeys' | null>(null);
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [showAllElements, setShowAllElements] = useState(false);
 
 
@@ -77,7 +95,7 @@ export const Sidebar = React.memo(function Sidebar({
     ? AMBIENT_ELEMENTS.filter(el => !expandedCategory || el.category === expandedCategory)
     : AMBIENT_ELEMENTS.filter(el => !expandedCategory || el.category === expandedCategory).slice(0, 4);
 
-  const toggleSection = (section: 'chakras' | 'elements' | 'templates') => {
+  const toggleSection = (section: 'chakras' | 'elements' | 'templates' | 'binaural' | 'journeys') => {
     setExpandedSection(prev => prev === section ? null : section);
   };
 
@@ -214,6 +232,71 @@ export const Sidebar = React.memo(function Sidebar({
                       <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setShowAllElements(false)} className="w-full py-2.5 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-white/5 text-white/40 hover:bg-white/10 hover:text-white/60 transition-all border border-white/10 hover:border-white/20">Ver Menos</motion.button>
                     )}
                   </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Binaural Beats Section */}
+        <div className="flex flex-col border-b border-white/5 pb-2">
+          <div 
+            onClick={() => toggleSection('binaural')} 
+            className="flex items-center justify-between w-full py-2 group cursor-pointer hover:opacity-80 transition-opacity"
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSection('binaural'); } }}
+          >
+            <h2 className="text-[10px] uppercase tracking-widest text-white/50 font-bold flex items-center gap-2 pointer-events-none">
+              <Brain className="w-3.5 h-3.5" /> Ondas Cerebrais
+            </h2>
+            <div className="flex items-center gap-2">
+              {binauralState !== 'off' && (
+                <span className="text-[8px] uppercase tracking-wider text-white/30 px-1.5 py-0.5 rounded bg-white/5">{binauralState}</span>
+              )}
+              <ChevronDown className={`w-4 h-4 text-white/20 transition-transform duration-500 pointer-events-none ${expandedSection === 'binaural' ? 'rotate-180' : ''}`} />
+            </div>
+          </div>
+          <AnimatePresence initial={false}>
+            {expandedSection === 'binaural' && (
+              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.5, ease: [0.04, 0.62, 0.23, 0.98] }} className="overflow-hidden">
+                <div className="pt-4 pb-4 px-1">
+                  <BinauralPanel
+                    binauralState={binauralState}
+                    binauralVolume={binauralVolume}
+                    onStateChange={onBinauralStateChange}
+                    onVolumeChange={onBinauralVolumeChange}
+                    chakraColor={activeChakra.palette.primary}
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Guided Journeys Section */}
+        <div className="flex flex-col border-b border-white/5 pb-2">
+          <div 
+            onClick={() => toggleSection('journeys')} 
+            className="flex items-center justify-between w-full py-2 group cursor-pointer hover:opacity-80 transition-opacity"
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSection('journeys'); } }}
+          >
+            <h2 className="text-[10px] uppercase tracking-widest text-white/50 font-bold flex items-center gap-2 pointer-events-none">
+              <Compass className="w-3.5 h-3.5" /> Jornadas Guiadas
+            </h2>
+            <ChevronDown className={`w-4 h-4 text-white/20 transition-transform duration-500 pointer-events-none ${expandedSection === 'journeys' ? 'rotate-180' : ''}`} />
+          </div>
+          <AnimatePresence initial={false}>
+            {expandedSection === 'journeys' && (
+              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.5, ease: [0.04, 0.62, 0.23, 0.98] }} className="overflow-hidden">
+                <div className="pt-4 pb-4 px-1">
+                  <JourneySelector
+                    onStart={onStartJourney}
+                    isJourneyActive={isJourneyActive}
+                    chakraColor={activeChakra.palette.primary}
+                  />
                 </div>
               </motion.div>
             )}
