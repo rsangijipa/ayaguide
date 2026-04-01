@@ -34,18 +34,18 @@ export function LandingHero({ onStart }: LandingHeroProps) {
       <div className="absolute inset-0 z-0 pointer-events-none">
         <motion.div
           animate={{
-            background: chakraHues.map(hue => `radial-gradient(circle at 50% 50%, hsla(${hue}, 60%, 50%, 0.12) 0%, transparent 70%)`),
+            background: chakraHues.map(hue => `radial-gradient(circle at 50% 50%, hsla(${hue}, 65%, 60%, 0.2) 0%, transparent 70%)`),
           }}
           transition={{
             duration: 40,
             repeat: Infinity,
             ease: "linear",
           }}
-          className="absolute inset-0 opacity-40 blur-3xl scale-125"
+          className="absolute inset-0 opacity-70 blur-3xl scale-125"
         />
         
         {/* Floating Sacred Geometric Layer */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-[0.03]">
+        <div className="absolute inset-0 flex items-center justify-center opacity-[0.05]">
           <svg viewBox="0 0 100 100" className="w-[120vh] h-[120vh] animate-spin-slow duration-[150s]">
             <circle cx="50" cy="50" r="48" fill="none" stroke="white" strokeWidth="0.05" />
             {[...Array(12)].map((_, i) => (
