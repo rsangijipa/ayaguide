@@ -60,60 +60,27 @@ export function useMediaSession() {
     // Definir estado de reprodução
     mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
 
-    // Configurar handlers de ação
-    const actionHandlers: Record<MediaSessionAction, () => void> = {
-      play: () => {
-        if (!isPlaying) {
-          togglePlay();
-        }
-      },
-      pause: () => {
-        if (isPlaying) {
-          togglePlay();
-        }
-      },
-      stop: () => {
-        if (isPlaying) {
-          togglePlay();
-        }
-      },
-      seekbackward: () => {
-        // Opcional: implementar retrocesso
-      },
-      seekforward: () => {
-        // Opcional: implementar avanço
-      },
-      seekto: () => {
-        // Opcional: implementar busca
-      },
-      previoustrack: () => {
-        // Opcional: implementar faixa anterior
-      },
-      nexttrack: () => {
-        // Opcional: implementar próxima faixa
-      },
-      skipad: () => {
-        // Opcional: implementar pular anúncio
-      },
-      togglecamera: () => {
-        // Não aplicável para áudio
-      },
-      togglemicrophone: () => {
-        // Não aplicável para áudio
-      },
-      hangup: () => {
-        // Não aplicável para áudio
-      },
+    // Configurar handlers de ação para controles de áudio
+    const handlePlay = () => {
+      if (!isPlaying) {
+        togglePlay();
+      }
     };
 
-    // Registrar handlers
-    Object.entries(actionHandlers).forEach(([action, handler]) => {
-      try {
-        mediaSession.setActionHandler(action as MediaSessionAction, handler);
-      } catch (error) {
-        // Algumas ações podem não ser suportadas
+    const handlePause = () => {
+      if (isPlaying) {
+        togglePlay();
       }
-    });
+    };
+
+    // Registrar handlers de ação
+    try {
+      mediaSession.setActionHandler('play', handlePlay);
+      mediaSession.setActionHandler('pause', handlePause);
+      mediaSession.setActionHandler('stop', handlePause);
+    } catch (error) {
+      console.warn('Erro ao registrar handlers de Media Session:', error);
+    }
 
     // Atualizar posição de reprodução
     const positionState = {
@@ -130,13 +97,13 @@ export function useMediaSession() {
 
     return () => {
       // Limpar handlers ao desmontar
-      Object.keys(actionHandlers).forEach((action) => {
-        try {
-          mediaSession.setActionHandler(action as MediaSessionAction, null);
-        } catch (error) {
-          // Silenciar erros ao limpar
-        }
-      });
+      try {
+        mediaSession.setActionHandler('play', null);
+        mediaSession.setActionHandler('pause', null);
+        mediaSession.setActionHandler('stop', null);
+      } catch (error) {
+        // Silenciar erros ao limpar
+      }
     };
   }, [isPlaying, togglePlay, activeChakra, sessionDuration, timeLeft]);
 }
