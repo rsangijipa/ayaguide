@@ -30,6 +30,9 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
+import { MediaSessionController } from '@/components/MediaSessionController';
+import { PWAInstaller } from '@/components/PWAInstaller';
+
 export default function RootLayout({
   children,
 }: {
@@ -38,6 +41,8 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className={`${outfit.variable} font-sans bg-[#020202] text-white selection:bg-white/20 dark overflow-hidden w-screen h-screen`}>
+        <MediaSessionController />
+        <PWAInstaller />
         {children}
       </body>
     </html>
