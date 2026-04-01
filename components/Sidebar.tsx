@@ -154,31 +154,41 @@ export const Sidebar = React.memo(function Sidebar({
               <Trash2 className="w-2.5 h-2.5" /> Limpar Todos
             </motion.button>
           )}
-        </div>
-
-        <div className="space-y-3">
-          <div className="flex items-center justify-between px-1">
-            <div className="flex items-center gap-2">
-               <Volume2 className="w-4 h-4 text-white/30" />
-               <span className="text-[11px] font-mono text-white/50">{Math.round(masterVolume * 100)}%</span>
+        </div>        <div className="space-y-4">
+          {/* Master Volume Control */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between px-1">
+              <div className="flex items-center gap-2">
+                 <Volume2 className="w-3.5 h-3.5 text-white/30" />
+                 <span className="text-[10px] uppercase tracking-widest text-white/40">Volume Mestre</span>
+              </div>
+              <span className="text-[11px] font-mono text-white/50">{Math.round(masterVolume * 100)}%</span>
             </div>
-            <span className="text-[9px] text-white/20 uppercase tracking-widest font-mono mt-0.5">{activeCount} canais</span>
-          </div>
-          <div className="relative group/vol h-6 flex items-center">
-            <input
-              type="range" min="0" max="1" step="0.01" value={masterVolume}
-              onChange={(e) => onMasterVolumeChange(parseFloat(e.target.value))}
-              data-testid="master-volume-slider"
-              className="w-full h-1 bg-white/10 rounded-full appearance-none cursor-pointer accent-transparent focus:outline-none"
-              style={{ background: `linear-gradient(to right, ${activeChakra.palette.primary} ${masterVolume * 100}%, rgba(255,255,255,0.1) ${masterVolume * 100}%)` }}
-              aria-label="Volume mestre"
-            />
-            <div 
-              className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-white pointer-events-none transition-transform group-hover/vol:scale-110"
-              style={{ left: `calc(${masterVolume * 100}% - 8px)`, backgroundColor: activeChakra.palette.primary, boxShadow: `0 0 15px ${activeChakra.palette.primary}` }}
-            />
+            <div className="relative group/vol h-4 flex items-center">
+              <input
+                type="range" min="0" max="1" step="0.01" value={masterVolume}
+                onChange={(e) => onMasterVolumeChange(parseFloat(e.target.value))}
+                data-testid="master-volume-slider"
+                className="w-full h-1 bg-white/10 rounded-full appearance-none cursor-pointer accent-transparent focus:outline-none"
+                style={{ background: `linear-gradient(to right, ${activeChakra.palette.primary} ${masterVolume * 100}%, rgba(255,255,255,0.1) ${masterVolume * 100}%)` }}
+                aria-label="Volume mestre"
+              />
+              <div 
+                className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full border border-white pointer-events-none transition-transform group-hover/vol:scale-110"
+                style={{ left: `calc(${masterVolume * 100}% - 7px)`, backgroundColor: activeChakra.palette.primary, boxShadow: `0 0 10px ${activeChakra.palette.primary}` }}
+              />
+            </div>
           </div>
 
+          {/* Focus / Occlusion Filter */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between px-1">
+              <div className="flex items-center gap-2">
+                 <Brain className="w-3.5 h-3.5 text-white/30" />
+                 <span className="text-[10px] uppercase tracking-widest text-white/40">Foco Dinâmico</span>
+              </div>
+              <span className="text-[10px] font-mono text-white/30">{Math.round(focusLevel * 100)}%</span>
+            </div>
             <div className="relative group/focus h-4 flex items-center">
               <input
                 type="range" min="0" max="1" step="0.01" value={focusLevel}
@@ -192,6 +202,7 @@ export const Sidebar = React.memo(function Sidebar({
                 style={{ left: `calc(${focusLevel * 100}% - 6px)`, backgroundColor: activeChakra.palette.primary }}
               />
             </div>
+          </div>
         </div>
       </motion.div>
 
