@@ -67,7 +67,7 @@ export const AMBIENT_ELEMENTS: AmbientElement[] = [
     url: '/sounds/weather/rain.mp3',
     category: 'weather',
     frequency: 'Mid (300-1000Hz)',
-    chakraAffinity: ['heart', 'throat', 'third_eye'],
+    chakraAffinity: ['heart', 'throat', 'thirdeye'],
   },
   {
     id: 'thunder',
@@ -87,7 +87,7 @@ export const AMBIENT_ELEMENTS: AmbientElement[] = [
     url: '/sounds/weather/wind.mp3',
     category: 'weather',
     frequency: 'High (2000-8000Hz)',
-    chakraAffinity: ['throat', 'third_eye', 'crown'],
+    chakraAffinity: ['throat', 'thirdeye', 'crown'],
   },
   {
     id: 'storm',
@@ -109,7 +109,7 @@ export const AMBIENT_ELEMENTS: AmbientElement[] = [
     url: '/sounds/nature/birds.mp3',
     category: 'nature',
     frequency: 'High (1000-4000Hz)',
-    chakraAffinity: ['heart', 'throat', 'third_eye'],
+    chakraAffinity: ['heart', 'throat', 'thirdeye'],
   },
   {
     id: 'forest',
@@ -129,7 +129,7 @@ export const AMBIENT_ELEMENTS: AmbientElement[] = [
     url: '/sounds/nature/crickets.mp3',
     category: 'nature',
     frequency: 'High (3000-10000Hz)',
-    chakraAffinity: ['third_eye', 'crown'],
+    chakraAffinity: ['thirdeye', 'crown'],
   },
   {
     id: 'leaves',
@@ -151,7 +151,7 @@ export const AMBIENT_ELEMENTS: AmbientElement[] = [
     url: '/sounds/mystical/bells.mp3',
     category: 'mystical',
     frequency: 'Mid-High (500-2000Hz)',
-    chakraAffinity: ['heart', 'third_eye', 'crown'],
+    chakraAffinity: ['heart', 'thirdeye', 'crown'],
   },
   {
     id: 'gong',
@@ -171,7 +171,7 @@ export const AMBIENT_ELEMENTS: AmbientElement[] = [
     url: '/sounds/mystical/singing_bowl.mp3',
     category: 'mystical',
     frequency: 'Mid (400-1500Hz)',
-    chakraAffinity: ['heart', 'throat', 'third_eye'],
+    chakraAffinity: ['heart', 'throat', 'thirdeye'],
   },
 
   // Elemental Category

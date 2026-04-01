@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface Toast {
@@ -20,6 +20,7 @@ export function showToast(message: string, icon?: string, actionLabel?: string, 
 
 export function ToastContainer() {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const timeoutIdsRef = useRef<number[]>([]);
 
   const addToast = useCallback((message: string, icon?: string, actionLabel?: string, onAction?: () => void) => {
     const id = ++toastId;
@@ -27,18 +28,28 @@ export function ToastContainer() {
     
     // Auto-remove if no action (actions need user interaction usually)
     const timeout = actionLabel ? 8000 : 3500;
-    setTimeout(() => {
+    const timeoutId = window.setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
     }, timeout);
+    timeoutIdsRef.current.push(timeoutId);
   }, []);
 
   useEffect(() => {
     addToastFn = addToast;
-    return () => { addToastFn = null; };
+    return () => {
+      addToastFn = null;
+      timeoutIdsRef.current.forEach((timeoutId) => window.clearTimeout(timeoutId));
+      timeoutIdsRef.current = [];
+    };
   }, [addToast]);
 
   return (
-    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[200] flex flex-col items-center gap-2 pointer-events-none">
+    <div
+      className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[200] flex flex-col items-center gap-2 pointer-events-none"
+      aria-live="polite"
+      aria-atomic="true"
+      aria-relevant="additions text"
+    >
       <AnimatePresence>
         {toasts.map(toast => (
           <motion.div
@@ -48,6 +59,7 @@ export function ToastContainer() {
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
             className="px-4 py-2.5 rounded-xl bg-black/60 backdrop-blur-2xl border border-white/10 shadow-2xl flex items-center gap-3 pointer-events-auto"
+            role="status"
           >
             <div className="flex items-center gap-2">
               {toast.icon && <span className="text-sm">{toast.icon}</span>}
@@ -58,11 +70,12 @@ export function ToastContainer() {
             
             {toast.actionLabel && toast.onAction && (
               <button
+                type="button"
                 onClick={() => {
                   toast.onAction?.();
                   setToasts(prev => prev.filter(t => t.id !== toast.id));
                 }}
-                className="px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors text-[10px] font-bold uppercase tracking-widest text-white/80"
+                className="rounded-lg border border-white/10 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-white/80 outline-none transition-colors hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white/30"
               >
                 {toast.actionLabel}
               </button>

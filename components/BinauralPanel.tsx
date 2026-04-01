@@ -3,7 +3,7 @@
 import React, { memo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Brain, Volume2 } from 'lucide-react';
-import { BINAURAL_DELTAS } from '@/lib/audio';
+import { BINAURAL_DELTAS } from '@/lib/audioMixer';
 import type { BinauralState } from '@/lib/types';
 
 interface BinauralPanelProps {

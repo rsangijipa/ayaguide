@@ -1,30 +1,30 @@
 "use client";
 
 import { useCallback } from 'react';
-import { useSessionStore } from '@/lib/store';
-import { useShallow } from 'zustand/react/shallow';
 import dynamic from 'next/dynamic';
-import { CHAKRAS } from '@/lib/constants';
-import { getJourney } from '@/lib/journeys';
 import { motion, AnimatePresence } from 'motion/react';
-import { ToastContainer, showToast } from '@/components/Toast';
+import { useShallow } from 'zustand/react/shallow';
 import { AuroraBackground } from '@/components/AuroraBackground';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { getAudioMixer } from '@/lib/audioMixer';
-import type { Chakra } from '@/lib/types';
-import { LandingHero } from '@/components/LandingHero';
 import { HeroDecoration } from '@/components/HeroDecoration';
+import { LandingHero } from '@/components/LandingHero';
 import { LoadingMandala } from '@/components/LoadingMandala';
+import { ToastContainer, showToast } from '@/components/Toast';
 import { useServiceWorker } from '@/hooks/useServiceWorker';
+import { getAudioMixer } from '@/lib/audioMixer';
+import { CHAKRAS } from '@/lib/constants';
+import { getJourney } from '@/lib/journeys';
+import { useSessionStore } from '@/lib/store';
+import type { Chakra } from '@/lib/types';
 
-// Heavy active session components - Defer everything!
-const SessionActive = dynamic(() => import('@/components/SessionActive').then(m => m.SessionActive), {
+// Heavy active session components - defer everything.
+const SessionActive = dynamic(() => import('@/components/SessionActive').then((m) => m.SessionActive), {
   loading: () => <LoadingMandala />,
-  ssr: false
+  ssr: false,
 });
 
 export default function App() {
-  // Registrar Service Worker para PWA
+  // Register the Service Worker for PWA support.
   useServiceWorker();
 
   return (
@@ -35,10 +35,7 @@ export default function App() {
 }
 
 function AyahuascaSession() {
-  const {
-    activeChakra,
-    hasStarted,
-  } = useSessionStore(
+  const { activeChakra, hasStarted } = useSessionStore(
     useShallow((s) => ({
       activeChakra: s.activeChakra,
       hasStarted: s.hasStarted,
@@ -49,35 +46,33 @@ function AyahuascaSession() {
     togglePlay,
     startExperience,
     resetSession,
-    setMasterVolume,
     addSavedTemplate,
     toggleSaveModal,
     startJourney,
     advanceJourneyPhase,
-    toggleBreathingGuide,
+    setBreathingActive,
     setDuration,
-  } = useSessionStore(useShallow(s => ({
-    togglePlay: s.togglePlay,
-    startExperience: s.startExperience,
-    resetSession: s.resetSession,
-    setMasterVolume: s.setMasterVolume,
-    addSavedTemplate: s.addSavedTemplate,
-    toggleSaveModal: s.toggleSaveModal,
-    startJourney: s.startJourney,
-    advanceJourneyPhase: s.advanceJourneyPhase,
-    toggleBreathingGuide: s.toggleBreathingGuide,
-    setDuration: s.setDuration,
-  })));
+  } = useSessionStore(
+    useShallow((s) => ({
+      togglePlay: s.togglePlay,
+      startExperience: s.startExperience,
+      resetSession: s.resetSession,
+      addSavedTemplate: s.addSavedTemplate,
+      toggleSaveModal: s.toggleSaveModal,
+      startJourney: s.startJourney,
+      advanceJourneyPhase: s.advanceJourneyPhase,
+      setBreathingActive: s.setBreathingActive,
+      setDuration: s.setDuration,
+    }))
+  );
 
   const triggerHaptic = useCallback((pattern: number | number[] = 10) => {
-    if (typeof window !== 'undefined' && 
-        'navigator' in window && 
-        window.navigator.vibrate) {
+    if (typeof window !== 'undefined' && 'navigator' in window && window.navigator.vibrate) {
       try {
-        // Some browsers require explicit user activation or a specific context
+        // Some browsers require explicit user activation or a specific context.
         window.navigator.vibrate(pattern);
-      } catch (e) {
-        // Silent fail for non-supported environments
+      } catch {
+        // Ignore haptics silently in unsupported environments.
       }
     }
   }, []);
@@ -95,8 +90,10 @@ function AyahuascaSession() {
   const handleStartJourney = useCallback((journeyId: string) => {
     const journey = getJourney(journeyId);
     if (!journey) return;
+
     const firstPhase = journey.phases[0];
-    const firstChakra = (CHAKRAS as Chakra[]).find(c => c.id === firstPhase.chakraId) || (CHAKRAS as Chakra[])[3];
+    const firstChakra =
+      (CHAKRAS as Chakra[]).find((chakra) => chakra.id === firstPhase.chakraId) || (CHAKRAS as Chakra[])[3];
 
     setDuration(Math.ceil(journey.totalDuration / 60));
     startJourney({
@@ -115,11 +112,14 @@ function AyahuascaSession() {
       phaseTimeLeft: firstPhase.duration,
     });
 
-    if (firstPhase.breathPatternId) toggleBreathingGuide();
-    if (!useSessionStore.getState().isPlaying) togglePlay();
+    setBreathingActive(Boolean(firstPhase.breathPatternId));
+    if (!useSessionStore.getState().isPlaying) {
+      togglePlay();
+    }
+
     triggerHaptic(20);
     showToast(`Jornada "${journey.name}" iniciada`, journey.emoji);
-  }, [setDuration, startJourney, advanceJourneyPhase, toggleBreathingGuide, togglePlay, triggerHaptic]);
+  }, [advanceJourneyPhase, setBreathingActive, setDuration, startJourney, togglePlay, triggerHaptic]);
 
   const handleExitExperience = useCallback(() => {
     const mixer = getAudioMixer();
@@ -129,45 +129,46 @@ function AyahuascaSession() {
       mixer.stopAll();
     }
     resetSession();
-    showToast('Até a próxima jornada. Namastê 🙏', '🌑');
+    showToast('Ate a proxima jornada. Namaste.', '\u{1F311}');
   }, [resetSession]);
 
   const handleSaveTemplate = useCallback((name: string) => {
     if (!activeChakra) return;
+
     addSavedTemplate({
       id: Date.now(),
       name,
       chakraId: activeChakra.id,
       ambientVolumes: useSessionStore.getState().ambientVolumes,
-      chakraVolume: useSessionStore.getState().chakraVolume
+      chakraVolume: useSessionStore.getState().chakraVolume,
     });
     toggleSaveModal();
-    showToast('Modelo salvo com sucesso', '💾');
+    showToast('Modelo salvo com sucesso', '\u{1F4BE}');
   }, [activeChakra, addSavedTemplate, toggleSaveModal]);
 
   if (!activeChakra) return null;
 
   return (
-    <div className="min-h-screen h-screen bg-[#020202] text-white overflow-hidden font-sans relative selection:bg-white/10">
-      <AuroraBackground 
-        activeChakraHue={activeChakra.hue} 
-        ambientVolumes={useSessionStore.getState().ambientVolumes} 
-        isPlaying={useSessionStore.getState().isPlaying} 
+    <div className="relative min-h-screen h-screen overflow-hidden bg-[#020202] font-sans text-white selection:bg-white/10">
+      <AuroraBackground
+        activeChakraHue={activeChakra.hue}
+        ambientVolumes={useSessionStore.getState().ambientVolumes}
+        isPlaying={useSessionStore.getState().isPlaying}
       />
 
       <AnimatePresence mode="wait">
         {!hasStarted ? (
-          <motion.div 
+          <motion.div
             key="landing"
             exit={{ opacity: 0, filter: 'blur(20px)', transition: { duration: 1.2 } }}
             className="absolute inset-0 flex items-center justify-center"
           >
-            <div className="absolute inset-x-0 bottom-0 top-0 bg-gradient-to-t from-[#020202] via-transparent to-transparent z-[2]" />
+            <div className="absolute inset-x-0 bottom-0 top-0 z-[2] bg-gradient-to-t from-[#020202] via-transparent to-transparent" />
             <HeroDecoration />
             <LandingHero onStart={handleStartExperience} />
           </motion.div>
         ) : (
-          <SessionActive 
+          <SessionActive
             key="active-session"
             onExit={handleExitExperience}
             handleStartJourney={handleStartJourney}
@@ -180,4 +181,3 @@ function AyahuascaSession() {
     </div>
   );
 }
-

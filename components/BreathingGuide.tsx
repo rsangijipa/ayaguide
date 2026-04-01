@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getPhaseAtTime, type BreathingPattern, BREATHING_PATTERNS } from '@/lib/breathingPatterns';
 
@@ -32,7 +32,6 @@ export function BreathingGuide({ isActive, chakraColor, onToggle, patternId = 'c
   useEffect(() => {
     if (!isActive) {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      setCycleCount(0);
       lastCycleRef.current = -1;
       return;
     }

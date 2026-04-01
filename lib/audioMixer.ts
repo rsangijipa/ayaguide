@@ -20,7 +20,7 @@ export const CHAKRA_FREQUENCIES: Record<string, number> = {
   solar: 528,
   heart: 639,
   throat: 741,
-  third_eye: 852,
+  thirdeye: 852,
   crown: 963,
 };
 

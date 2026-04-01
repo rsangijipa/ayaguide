@@ -8,7 +8,7 @@ import {
   drawRing,
   emod
 } from '@/lib/mandalaSystem';
-import { getAudioEngine } from '@/lib/audio';
+import { getAudioMixer } from '@/lib/audioMixer';
 import { useSessionStore } from '@/lib/store';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -269,7 +269,7 @@ export function Mandala({
       ctx.shadowBlur = 15;
       ctx.shadowColor = paletteRef.current?.primary || '#fff';
 
-      const engine = getAudioEngine();
+      const engine = getAudioMixer();
       let targetScale = 1;
       let targetGlow = 15;
 

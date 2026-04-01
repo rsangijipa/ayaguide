@@ -2,16 +2,17 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'AyaGuide | Portal de Meditação Sonora',
+    name: 'AyaGuide | Portal de Meditacao Sonora',
     short_name: 'AyaGuide',
-    description: 'Experiência imersiva de meditação sonora e mandalas vibracionais.',
+    description: 'Experiencia imersiva de meditacao sonora e mandalas vibracionais.',
     start_url: '/',
     display: 'standalone',
+    orientation: 'portrait',
     background_color: '#020202',
-    theme_color: '#C084FC', // Purple accent
+    theme_color: '#020202',
     icons: [
       {
-        src: '/icon.png', // We will link the generated icon to this public path
+        src: '/icon.png',
         sizes: '1024x1024',
         type: 'image/png',
       },
@@ -27,9 +28,10 @@ export default function manifest(): MetadataRoute.Manifest {
       },
       {
         src: '/icon.png',
-        sizes: 'maskable',
+        sizes: '1024x1024',
         type: 'image/png',
-      }
+        purpose: 'maskable',
+      },
     ],
   };
 }

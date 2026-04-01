@@ -1,13 +1,13 @@
 /**
  * Jornadas Guiadas para AyaGuide
- * Sequências pré-programadas que mudam chakra, sons e respiração automaticamente
+ * Sequencias pre-programadas que mudam chakra, sons e respiracao automaticamente.
  */
 
 export interface JourneyPhaseDefinition {
   chakraId: string;
   ambientVolumes: Record<string, number>;
   breathPatternId?: string;
-  duration: number; // seconds
+  duration: number;
   message: string;
   chakraVolume: number;
 }
@@ -17,7 +17,7 @@ export interface Journey {
   name: string;
   description: string;
   emoji: string;
-  totalDuration: number; // seconds (auto-calculated)
+  totalDuration: number;
   phases: JourneyPhaseDefinition[];
   indication: string;
 }
@@ -26,17 +26,17 @@ export const JOURNEYS: Journey[] = [
   {
     id: 'morning-awakening',
     name: 'Despertar Matinal',
-    description: 'Ative sua energia dos pés à cabeça com frequências ascendentes e sons revigorantes.',
-    emoji: '🌅',
+    description: 'Ative sua energia dos pes a cabeca com frequencias ascendentes e sons revigorantes.',
+    emoji: '\u{1F305}',
     indication: 'Energia e vitalidade para o dia',
-    totalDuration: 900, // 15 min
+    totalDuration: 900,
     phases: [
       {
         chakraId: 'root',
         ambientVolumes: { birds: 0.5, forest: 0.4, water: 0.3 },
         breathPatternId: 'coherence',
         duration: 300,
-        message: 'Conecte-se com a terra. Sinta seus pés firmes no chão.',
+        message: 'Conecte-se com a terra. Sinta seus pes firmes no chao.',
         chakraVolume: 0.5,
       },
       {
@@ -44,7 +44,7 @@ export const JOURNEYS: Journey[] = [
         ambientVolumes: { water: 0.6, ocean: 0.4, birds: 0.3 },
         breathPatternId: 'calm',
         duration: 300,
-        message: 'Desperte sua criatividade. Deixe a energia fluir como água.',
+        message: 'Desperte sua criatividade. Deixe a energia fluir como agua.',
         chakraVolume: 0.6,
       },
       {
@@ -52,7 +52,7 @@ export const JOURNEYS: Journey[] = [
         ambientVolumes: { fire: 0.5, wind: 0.4, birds: 0.5, waterfall: 0.3 },
         breathPatternId: 'box',
         duration: 300,
-        message: 'Acenda seu poder interior. Sinta o calor da determinação.',
+        message: 'Acenda seu poder interior. Sinta o calor da determinacao.',
         chakraVolume: 0.7,
       },
     ],
@@ -60,17 +60,17 @@ export const JOURNEYS: Journey[] = [
   {
     id: 'night-relaxation',
     name: 'Relaxamento Noturno',
-    description: 'Desça suavemente do mental ao coração, preparando corpo e mente para o descanso.',
-    emoji: '🌙',
-    indication: 'Relaxamento e preparação para o sono',
-    totalDuration: 1200, // 20 min
+    description: 'Desca suavemente do mental ao coracao, preparando corpo e mente para o descanso.',
+    emoji: '\u{1F319}',
+    indication: 'Relaxamento e preparacao para o sono',
+    totalDuration: 1200,
     phases: [
       {
         chakraId: 'crown',
         ambientVolumes: { singing_bowl: 0.6, bells: 0.5, wind: 0.3 },
         breathPatternId: 'calm',
         duration: 300,
-        message: 'Abra a consciência. Observe seus pensamentos sem julgamento.',
+        message: 'Abra a consciencia. Observe seus pensamentos sem julgamento.',
         chakraVolume: 0.6,
       },
       {
@@ -86,7 +86,7 @@ export const JOURNEYS: Journey[] = [
         ambientVolumes: { ocean: 0.5, rain: 0.4, crickets: 0.5 },
         breathPatternId: 'sleep',
         duration: 300,
-        message: 'Sinta gratidão. Envolva-se em paz e acolhimento.',
+        message: 'Sinta gratidao. Envolva-se em paz e acolhimento.',
         chakraVolume: 0.5,
       },
       {
@@ -94,25 +94,25 @@ export const JOURNEYS: Journey[] = [
         ambientVolumes: { ocean: 0.6, rain: 0.3, lava: 0.3, gong: 0.4 },
         breathPatternId: 'sleep',
         duration: 300,
-        message: 'Entregue-se ao descanso. Você está seguro.',
+        message: 'Entregue-se ao descanso. Voce esta seguro.',
         chakraVolume: 0.4,
       },
     ],
   },
   {
     id: 'energy-cleanse',
-    name: 'Limpeza Energética',
-    description: 'Percorra todos os 7 chakras em sequência ascendente para uma limpeza completa.',
-    emoji: '🔥',
-    indication: 'Equilíbrio e limpeza de todos os centros energéticos',
-    totalDuration: 1680, // 28 min (4 min each)
+    name: 'Limpeza Energetica',
+    description: 'Percorra todos os 7 chakras em sequencia ascendente para uma limpeza completa.',
+    emoji: '\u{1F525}',
+    indication: 'Equilibrio e limpeza de todos os centros energeticos',
+    totalDuration: 1680,
     phases: [
       {
         chakraId: 'root',
         ambientVolumes: { fire: 0.5, lava: 0.4, thunder: 0.2 },
         breathPatternId: 'box',
         duration: 240,
-        message: 'Raiz: Libere medos. Você está seguro e fundamentado.',
+        message: 'Raiz: Libere medos. Voce esta seguro e fundamentado.',
         chakraVolume: 0.7,
       },
       {
@@ -136,7 +136,7 @@ export const JOURNEYS: Journey[] = [
         ambientVolumes: { forest: 0.5, birds: 0.5, bells: 0.4, water: 0.3 },
         breathPatternId: 'coherence',
         duration: 240,
-        message: 'Coração: Libere mágoa. Abra-se ao amor incondicional.',
+        message: 'Coracao: Libere magoa. Abra-se ao amor incondicional.',
         chakraVolume: 0.7,
       },
       {
@@ -152,7 +152,7 @@ export const JOURNEYS: Journey[] = [
         ambientVolumes: { bells: 0.6, gong: 0.5, crickets: 0.3 },
         breathPatternId: 'calm',
         duration: 240,
-        message: 'Terceiro Olho: Libere ilusão. Veja com clareza.',
+        message: 'Terceiro Olho: Libere ilusao. Veja com clareza.',
         chakraVolume: 0.7,
       },
       {
@@ -168,7 +168,7 @@ export const JOURNEYS: Journey[] = [
 ];
 
 export function getJourney(id: string): Journey | undefined {
-  return JOURNEYS.find(j => j.id === id);
+  return JOURNEYS.find((journey) => journey.id === id);
 }
 
 export function formatJourneyDuration(seconds: number): string {

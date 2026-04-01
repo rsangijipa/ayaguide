@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
 import { useAudioLevel } from '@/hooks/useAudioLevel';
 import { useIsMobile } from '@/hooks/useMediaQuery';
 import { useSessionStore } from '@/lib/store';
@@ -21,11 +20,6 @@ export function AuroraBackground({ activeChakraHue, ambientVolumes, isPlaying }:
   );
 
   const isMobile = useIsMobile(768);
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
 
   // Shift hue: water pushes toward blue (210), fire toward red (0), nature toward green (120)
   const waterLevel = ((ambientVolumes.water || 0) + (ambientVolumes.ocean || 0) + (ambientVolumes.waterfall || 0)) / 3;
@@ -34,8 +28,6 @@ export function AuroraBackground({ activeChakraHue, ambientVolumes, isPlaying }:
   const hueShift = waterLevel * 30 + fireLevel * -40 + natureLevel * 10;
   const auroraHue = activeChakraHue + hueShift;
   const auroraIntensity = qualityMode === 'minimal' ? 0.2 : (0.15 + audioLevel * 0.2 + (waterLevel + fireLevel + natureLevel) * 0.05);
-
-  if (!isMounted) return <div className="fixed inset-0 bg-[#020202] z-[0]" />;
 
   return (
     <div className="fixed inset-0 pointer-events-none z-[0] bg-[#020202]">

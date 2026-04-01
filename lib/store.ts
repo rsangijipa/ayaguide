@@ -22,6 +22,7 @@ interface SessionSlice {
   tick: (timeLeft: number) => void;
   startExperience: () => void;
   toggleFullscreen: () => void;
+  setFullscreen: (isFullScreen: boolean) => void;
   resetSession: () => void;
 }
 
@@ -60,6 +61,7 @@ interface UISlice {
   toggleTimerPicker: () => void;
   toggleSaveModal: () => void;
   toggleBreathingGuide: () => void;
+  setBreathingActive: (active: boolean) => void;
   setBreathingPattern: (id: string) => void;
   toggleBreathingPicker: () => void;
   addSavedTemplate: (template: SavedTemplate) => void;
@@ -137,6 +139,7 @@ const createSessionSlice: StateCreator<SessionStore, [], [], SessionSlice> = (se
   tick: (timeLeft) => set(() => ({ timeLeft })),
   startExperience: () => set(() => ({ hasStarted: true, isPlaying: false })),
   toggleFullscreen: () => set((state) => ({ isFullScreen: !state.isFullScreen })),
+  setFullscreen: (isFullScreen) => set(() => ({ isFullScreen })),
   resetSession: () => set(() => ({
     ...initialSessionState,
     ...initialAudioState,
@@ -178,6 +181,7 @@ const createUISlice: StateCreator<SessionStore, [], [], UISlice> = (set) => ({
   toggleTimerPicker: () => set((state) => ({ showTimerPicker: !state.showTimerPicker })),
   toggleSaveModal: () => set((state) => ({ showSaveModal: !state.showSaveModal })),
   toggleBreathingGuide: () => set((state) => ({ breathingActive: !state.breathingActive })),
+  setBreathingActive: (active) => set(() => ({ breathingActive: active })),
   setBreathingPattern: (id) => set(() => ({ breathingPatternId: id })),
   toggleBreathingPicker: () => set((state) => ({ showBreathingPicker: !state.showBreathingPicker })),
   addSavedTemplate: (template) => set((state) => ({ 
@@ -209,6 +213,7 @@ const createJourneySlice: StateCreator<SessionStore, [], [], JourneySlice> = (se
     chakraVolume: payload.chakraVolume,
     isChakraOn: true,
     breathingPatternId: payload.breathPatternId || state.breathingPatternId,
+    breathingActive: Boolean(payload.breathPatternId),
     activeJourney: state.activeJourney ? {
       ...state.activeJourney,
       currentPhaseIndex: payload.phaseIndex,

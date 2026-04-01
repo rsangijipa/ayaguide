@@ -1,7 +1,13 @@
 node_modules/
 .next/
 coverage/
+.venv/
 .DS_Store
 *.log
+Trace-*.json
+eslint_*.json
+eslint_*.txt
+lint_*.txt
+tsconfig.tsbuildinfo
 .env*
 !.env.example

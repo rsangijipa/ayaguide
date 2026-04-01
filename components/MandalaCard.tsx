@@ -3,7 +3,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { Mandala } from './Mandala';
-import { getAudioEngine } from '@/lib/audio';
 
 import { useAudioLevel } from '@/hooks/useAudioLevel';
 

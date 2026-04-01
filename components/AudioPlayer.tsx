@@ -41,7 +41,7 @@ export function AudioPlayer({
   // 1. Initialize Loop Manager on Mount
   useEffect(() => {
     if (!loopManagerRef.current) {
-      loopManagerRef.current = new AudioLoopManager(src, volume, loopDuration, onLoopComplete);
+      loopManagerRef.current = new AudioLoopManager(src, 0.5, loopDuration, onLoopComplete);
       // Pre-load the buffer for instant playback
       loopManagerRef.current.load();
     }

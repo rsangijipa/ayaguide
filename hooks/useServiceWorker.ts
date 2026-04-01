@@ -8,24 +8,21 @@ interface ServiceWorkerState {
 }
 
 export function useServiceWorker(): ServiceWorkerState {
-  const [state, setState] = useState<ServiceWorkerState>({
-    isSupported: false,
+  const [state, setState] = useState<ServiceWorkerState>(() => ({
+    isSupported: typeof window !== 'undefined' && 'serviceWorker' in navigator,
     isRegistered: false,
     isUpdating: false,
     error: null,
-  });
+  }));
 
   useEffect(() => {
-    // Verificar suporte a Service Worker
     if (!('serviceWorker' in navigator)) {
-      console.warn('Service Worker não é suportado neste navegador');
-      setState((prev) => ({ ...prev, isSupported: false }));
+      console.warn('Service Worker nao e suportado neste navegador');
       return;
     }
 
-    setState((prev) => ({ ...prev, isSupported: true }));
-
     let registration: ServiceWorkerRegistration | null = null;
+    let updateInterval: ReturnType<typeof setInterval> | null = null;
 
     const registerServiceWorker = async () => {
       try {
@@ -44,21 +41,18 @@ export function useServiceWorker(): ServiceWorkerState {
           error: null,
         }));
 
-        // Verificar atualizações periodicamente
         registration.addEventListener('updatefound', () => {
-          const newWorker = registration!.installing;
+          const newWorker = registration?.installing;
           if (!newWorker) return;
 
           newWorker.addEventListener('statechange', () => {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              console.log('[useServiceWorker] Nova versão do Service Worker disponível');
-              // Aqui você pode notificar o usuário sobre uma atualização
+              console.log('[useServiceWorker] Nova versao do Service Worker disponivel');
             }
           });
         });
 
-        // Verificar atualizações a cada hora
-        setInterval(() => {
+        updateInterval = setInterval(() => {
           registration?.update();
         }, 60 * 60 * 1000);
       } catch (error) {
@@ -73,7 +67,6 @@ export function useServiceWorker(): ServiceWorkerState {
       }
     };
 
-    // Aguardar o carregamento completo da página antes de registrar
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', registerServiceWorker);
     } else {
@@ -82,6 +75,9 @@ export function useServiceWorker(): ServiceWorkerState {
 
     return () => {
       document.removeEventListener('DOMContentLoaded', registerServiceWorker);
+      if (updateInterval) {
+        clearInterval(updateInterval);
+      }
     };
   }, []);
 

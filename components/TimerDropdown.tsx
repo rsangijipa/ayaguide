@@ -44,7 +44,7 @@ export function TimerDropdown({
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -10, scale: 0.95 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
-          className="absolute top-full left-0 mt-3 z-[150] w-48 overflow-hidden rounded-2xl border border-white/10 bg-black/60 backdrop-blur-3xl shadow-2xl"
+          className="absolute top-full left-0 mt-3 z-[150] w-48 overflow-hidden rounded-2xl border border-white/10 bg-black/60 shadow-2xl backdrop-blur-3xl [overscroll-behavior:contain]"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="p-2 space-y-1">
@@ -62,7 +62,7 @@ export function TimerDropdown({
                     onSelect(minutes);
                     onClose();
                   }}
-                  className={`group relative flex w-full items-center justify-between rounded-xl px-4 py-3 text-sm transition-all outline-none ${
+                  className={`group relative flex w-full items-center justify-between rounded-xl px-4 py-3 text-sm transition-all outline-none focus-visible:ring-2 focus-visible:ring-white/30 ${
                     isSelected 
                       ? 'bg-white/10 text-white' 
                       : 'text-white/40 hover:bg-white/5 hover:text-white/80'

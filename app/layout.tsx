@@ -2,15 +2,15 @@ import type { Metadata, Viewport } from 'next';
 import { Outfit } from 'next/font/google';
 import './globals.css';
 
-const outfit = Outfit({ 
+const outfit = Outfit({
   subsets: ['latin'],
   variable: '--font-outfit',
   display: 'swap',
 });
 
 export const metadata: Metadata = {
-  title: 'AyaGuide | Portal de Meditação Sonora',
-  description: 'Uma experiência imersiva de meditação combinando frequências dos chakras, 16 sons da natureza e mandalas dinâmicas.',
+  title: 'AyaGuide | Portal de Meditacao Sonora',
+  description: 'Uma experiencia imersiva de meditacao com frequencias dos chakras, sons da natureza e mandalas dinamicas.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
@@ -27,7 +27,6 @@ export const viewport: Viewport = {
   themeColor: '#020202',
   initialScale: 1,
   width: 'device-width',
-  userScalable: false,
 };
 
 import { MediaSessionController } from '@/components/MediaSessionController';

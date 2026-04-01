@@ -11,24 +11,22 @@ interface BeforeInstallPromptEvent extends Event {
 export default function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
-  const [isInstalled, setIsInstalled] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches
+  );
 
   useEffect(() => {
-    // Verificar se o app já está instalado
     if (window.matchMedia('(display-mode: standalone)').matches) {
-      setIsInstalled(true);
       return;
     }
 
-    // Listener para o evento beforeinstallprompt
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      const event = e as BeforeInstallPromptEvent;
-      setDeferredPrompt(event);
+    const handleBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      const installEvent = event as BeforeInstallPromptEvent;
+      setDeferredPrompt(installEvent);
       setShowPrompt(true);
     };
 
-    // Listener para quando o app é instalado
     const handleAppInstalled = () => {
       console.log('PWA foi instalado com sucesso!');
       setIsInstalled(true);
@@ -51,14 +49,14 @@ export default function InstallPrompt() {
     try {
       await deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
-      
+
       if (outcome === 'accepted') {
-        console.log('Usuário aceitou a instalação');
+        console.log('Usuario aceitou a instalacao');
         setIsInstalled(true);
       } else {
-        console.log('Usuário recusou a instalação');
+        console.log('Usuario recusou a instalacao');
       }
-      
+
       setDeferredPrompt(null);
       setShowPrompt(false);
     } catch (error) {
@@ -70,7 +68,6 @@ export default function InstallPrompt() {
     setShowPrompt(false);
   };
 
-  // Não mostrar nada se o app já está instalado ou não há prompt disponível
   if (isInstalled || !showPrompt) {
     return null;
   }
@@ -91,11 +88,11 @@ export default function InstallPrompt() {
             <X className="w-4 h-4" />
           </button>
         </div>
-        
+
         <p className="text-white/90 text-sm mb-4">
-          Instale nosso aplicativo para uma experiência melhor e acesso offline.
+          Instale nosso aplicativo para uma experiencia melhor e acesso offline.
         </p>
-        
+
         <div className="flex gap-2">
           <button
             onClick={handleInstall}

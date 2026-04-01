@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { getAudioEngine } from '@/lib/audio';
+import { getAudioMixer } from '@/lib/audioMixer';
 
 /**
  * Hook to share the getFrequencyData loop between multiple visual components.
@@ -13,7 +13,7 @@ export function useAudioLevel(isPlaying: boolean) {
   const rafId = useRef<number | null>(null);
 
   useEffect(() => {
-    const engine = getAudioEngine();
+    const engine = getAudioMixer();
     if (!engine) return;
 
     const getLevels = () => {

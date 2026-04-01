@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 interface ShortcutHandlers {
   onTogglePlay: () => void;
@@ -11,6 +11,12 @@ interface ShortcutHandlers {
 }
 
 export function useKeyboardShortcuts(hasStarted: boolean, handlers: ShortcutHandlers) {
+  const handlersRef = useRef(handlers);
+
+  useEffect(() => {
+    handlersRef.current = handlers;
+  }, [handlers]);
+
   useEffect(() => {
     if (!hasStarted) return;
 
@@ -26,28 +32,28 @@ export function useKeyboardShortcuts(hasStarted: boolean, handlers: ShortcutHand
       switch (e.code) {
         case 'Space':
           e.preventDefault();
-          handlers.onTogglePlay();
+          handlersRef.current.onTogglePlay();
           break;
         case 'KeyF':
           e.preventDefault();
-          handlers.onToggleFullscreen();
+          handlersRef.current.onToggleFullscreen();
           break;
         case 'KeyM':
           e.preventDefault();
-          handlers.onToggleMute();
+          handlersRef.current.onToggleMute();
           break;
         case 'KeyB':
           e.preventDefault();
-          handlers.onToggleBreathing();
+          handlersRef.current.onToggleBreathing();
           break;
         case 'KeyP': // Sidebar Toggle (Picker)
           e.preventDefault();
-          handlers.onToggleSidebar();
+          handlersRef.current.onToggleSidebar();
           break;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [hasStarted, handlers]);
+  }, [hasStarted]);
 }
