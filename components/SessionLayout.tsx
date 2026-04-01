@@ -115,19 +115,26 @@ export function SessionLayout({
       {/* 2. Main Area (Header + Content) */}
       <div className="flex-1 flex flex-col min-w-0 min-h-0 relative z-10 transition-all duration-700">
         
-        {/* Header Slot */}
+        {/* Header Slot - Persistent and Floating in Fullscreen */}
         <AnimatePresence>
-          {!isFullScreen && (
-            <motion.div
-              initial={{ y: -100, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: -100, opacity: 0 }}
-              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              className={`shrink-0 mb-4 md:mb-6 ${isMobile ? 'h-16' : 'h-20'}`}
-            >
-              {header}
-            </motion.div>
-          )}
+          <motion.div
+            initial={{ y: -100, opacity: 0 }}
+            animate={{ 
+              y: 0, 
+              opacity: 1,
+              scale: isFullScreen ? 0.9 : 1,
+              marginTop: isFullScreen ? '1rem' : '0'
+            }}
+            exit={{ y: -100, opacity: 0 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className={`shrink-0 z-[110] transition-all duration-700 ${
+              isFullScreen 
+                ? 'absolute top-0 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-5xl pointer-events-auto' 
+                : (isMobile ? 'h-16 mb-4' : 'h-20 mb-6')
+            }`}
+          >
+            {header}
+          </motion.div>
         </AnimatePresence>
 
         {/* Content (Mandala) Slot */}

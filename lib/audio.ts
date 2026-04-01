@@ -30,6 +30,7 @@ class AudioEngine {
   private filterNode: BiquadFilterNode | null = null;
   private analyser: AnalyserNode | null = null;
   private sources: Map<HTMLMediaElement, MediaElementAudioSourceNode> = new Map();
+  private audioBuffers: Map<string, AudioBuffer> = new Map();
   private reverbNode: ConvolverNode | null = null;
   private isInitialized = false;
 
@@ -233,6 +234,11 @@ class AudioEngine {
     }
   }
 
+  get context(): AudioContext | null {
+    if (!this.ctx) this.init();
+    return this.ctx;
+  }
+
   resume() {
     if (this.ctx && this.ctx.state === 'suspended') {
       this.ctx.resume();
@@ -307,6 +313,37 @@ class AudioEngine {
   }
 
   /**
+   * loadBuffer: Fetches and decodes audio into a high-performance Buffer.
+   */
+  async loadBuffer(url: string): Promise<AudioBuffer | null> {
+    if (!this.ctx) this.init();
+    if (!this.ctx) return null;
+    if (this.audioBuffers.has(url)) return this.audioBuffers.get(url)!;
+
+    try {
+      const response = await fetch(url);
+      const arrayBuffer = await response.arrayBuffer();
+      const audioBuffer = await this.ctx.decodeAudioData(arrayBuffer);
+      this.audioBuffers.set(url, audioBuffer);
+      return audioBuffer;
+    } catch (e) {
+      console.warn(`Could not load audio buffer: ${url}`, e);
+      return null;
+    }
+  }
+
+  getBuffer(url: string): AudioBuffer | undefined {
+    return this.audioBuffers.get(url);
+  }
+
+  createGain(): GainNode | null {
+    if (!this.ctx || !this.masterGain) return null;
+    const gainNode = this.ctx.createGain();
+    gainNode.connect(this.masterGain);
+    return gainNode;
+  }
+
+  /**
    * disconnectMediaElement: Prevents memory leaks by cleaning up 
    * MediaElementAudioSourceNode references when elements are no longer needed.
    */
@@ -321,9 +358,6 @@ class AudioEngine {
   }
 }
 
-let instance: AudioEngine | null = null;
-export const getAudioEngine = () => {
-  if (typeof window === 'undefined') return null;
-  if (!instance) instance = new AudioEngine();
-  return instance;
-};
+// ─── Re-export new mixer as drop-in replacement ───────────────────────────────
+// All existing imports of getAudioEngine from '@/lib/audio' now get the mixer.
+export { getAudioMixer as getAudioEngine, BINAURAL_DELTAS as _BINAURAL_DELTAS } from './audioMixer';

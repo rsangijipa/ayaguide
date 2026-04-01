@@ -38,15 +38,12 @@ export function AudioPlayer({
   const loopManagerRef = useRef<AudioLoopManager | null>(null);
   const [progress, setProgress] = useState(0);
 
-  // Inicializar motor de áudio quando o componente monta
+  // 1. Initialize Loop Manager on Mount
   useEffect(() => {
     if (!loopManagerRef.current) {
-      loopManagerRef.current = new AudioLoopManager(
-        src,
-        volume,
-        loopDuration,
-        onLoopComplete
-      );
+      loopManagerRef.current = new AudioLoopManager(src, volume, loopDuration, onLoopComplete);
+      // Pre-load the buffer for instant playback
+      loopManagerRef.current.load();
     }
 
     return () => {
@@ -55,56 +52,45 @@ export function AudioPlayer({
         loopManagerRef.current = null;
       }
     };
-  }, [src, volume, loopDuration, onLoopComplete]);
+  }, [src, loopDuration, onLoopComplete]); // volume handled by dedicated effect
 
-  // Sincronizar volume
+  // 2. Synchronize Volume
   useEffect(() => {
     if (loopManagerRef.current) {
       loopManagerRef.current.setVolume(volume);
-      
-      // Conexão preguiçosa: Só conecta ao motor de áudio Web se o som estiver sendo usado
-      // Isso resolve a limitação de 'um som por vez' em alguns navegadores (Chrome/Edge)
-      if (volume > 0.01) {
-        loopManagerRef.current.connectToEngine();
-      }
     }
   }, [volume]);
 
-  // Sincronizar fonte (caso mude dinamicamente)
+  // 3. Synchronize Playback State
   useEffect(() => {
     if (loopManagerRef.current) {
-      loopManagerRef.current.setSrc(src);
-    }
-  }, [src]);
-
-  // Sincronizar estado de ativação (Play/Pause)
-  useEffect(() => {
-    if (loopManagerRef.current) {
-      if (isActive && volume > 0) {
+      if (isActive) {
         loopManagerRef.current.start();
       } else {
         loopManagerRef.current.pause();
       }
     }
-  }, [isActive, volume]);
+  }, [isActive]);
 
-  // Monitorar progresso caso a UI precise exibir
+  // 4. Synchronize Source
+  useEffect(() => {
+    if (loopManagerRef.current) {
+      loopManagerRef.current.setSrc(src).catch(() => {});
+    }
+  }, [src]);
+
+  // 5. Progress Monitoring
   useEffect(() => {
     if (!showProgress) return;
-    
     let frameId: number;
     const updateProgress = () => {
-      if (loopManagerRef.current) {
-        setProgress(loopManagerRef.current.getProgress());
-      }
+      if (loopManagerRef.current) setProgress(loopManagerRef.current.getProgress());
       frameId = requestAnimationFrame(updateProgress);
     };
-
     frameId = requestAnimationFrame(updateProgress);
     return () => cancelAnimationFrame(frameId);
   }, [showProgress]);
 
-  // Componente invisível (apenas gerenciador de áudio)
   if (!showProgress) return null;
 
   return (
@@ -123,10 +109,6 @@ export function AudioPlayer({
   );
 }
 
-// --------------------------------------------------------------------------------
-// AudioPlayerGroup
-// --------------------------------------------------------------------------------
-
 export interface AudioPlayerGroupProps {
   elements: AudioPlayerElement[];
   volumes: Record<string, number>;
@@ -135,27 +117,34 @@ export interface AudioPlayerGroupProps {
   onLoopComplete?: (elementId: string) => void;
 }
 
-export function AudioPlayerGroup({
-  elements,
-  volumes,
-  isPlaying,
-  loopDuration = 14400,
-  onLoopComplete,
+export function AudioPlayerGroup({ 
+  elements, 
+  volumes, 
+  isPlaying, 
+  loopDuration = 14400, 
+  onLoopComplete 
 }: AudioPlayerGroupProps) {
+  // CRITICAL: Only render AudioPlayer for elements with volume > 0 
+  // This respects browser limits on MediaElementAudioSourceNodes (usually 10)
   return (
     <div className="audio-player-group hidden">
-      {elements.map((element) => (
-        <AudioPlayer
-          key={element.id}
-          elementId={element.id}
-          elementName={element.name}
-          src={element.url}
-          volume={volumes[element.id] || 0}
-          isActive={isPlaying}
-          loopDuration={loopDuration}
-          onLoopComplete={() => onLoopComplete && onLoopComplete(element.id)}
-        />
-      ))}
+      {elements.map((element: AudioPlayerElement) => {
+        const vol = volumes[element.id] || 0;
+        if (vol <= 0) return null;
+        
+        return (
+          <AudioPlayer
+            key={element.id}
+            elementId={element.id}
+            elementName={element.name}
+            src={element.url}
+            volume={vol}
+            isActive={isPlaying}
+            loopDuration={loopDuration}
+            onLoopComplete={() => onLoopComplete && onLoopComplete(element.id)}
+          />
+        );
+      })}
     </div>
   );
 }

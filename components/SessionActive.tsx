@@ -6,14 +6,14 @@ import { useSessionStore } from '@/lib/store';
 import { useShallow } from 'zustand/react/shallow';
 import { SessionLayout } from '@/components/SessionLayout';
 import { CHAKRAS, LOOP_ELEMENTS } from '@/lib/constants';
-import { AudioPlayerGroup } from '@/components/AudioPlayer';
+import { AmbientPlayerGroup } from '@/components/AmbientPlayer';
 import { useIsMobile } from '@/hooks/useMediaQuery';
 import { useJourneyTimer } from '@/hooks/useJourneyTimer';
 import { AnimatePresence, motion } from 'motion/react';
 import { Pause, Play, Clock, Maximize2, Minimize2, Wind as WindIcon, LogOut, ChevronDown } from 'lucide-react';
 import { ToastContainer, showToast } from '@/components/Toast';
 import { TimerDropdown } from '@/components/TimerDropdown';
-import { getAudioEngine } from '@/lib/audio';
+import { getAudioMixer } from '@/lib/audioMixer';
 
 // Heavy components lazily loaded inside the active session
 const MandalaCard = dynamic(() => import('@/components/MandalaCard').then(m => m.MandalaCard), { ssr: false });
@@ -25,16 +25,13 @@ const SaveTemplateModal = dynamic(() => import('@/components/SaveTemplateModal')
 const JourneyPlayer = dynamic(() => import('@/components/JourneyPlayer').then(m => m.JourneyPlayer), { ssr: false });
 
 // Shared Small Components
-const TimerValue = React.memo(function TimerValue() {
-  const timeLeft = useSessionStore(s => s.timeLeft);
-  const formatTime = (seconds: number) => {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = seconds % 60;
-    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  };
-  return <>{formatTime(timeLeft)}</>;
-});
+// Helper for time formatting
+const formatTimeSeconds = (seconds: number) => {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+};
 
 interface SessionActiveProps {
   onExit: () => void;
@@ -63,6 +60,12 @@ function SessionIntegrator() {
   const tick = useSessionStore(s => s.tick);
 
   React.useEffect(() => {
+    // If timeLeft was changed manually (diff > 2s while NOT playing), reset references
+    if (!isPlaying && initialTimeLeftRef.current !== null && Math.abs(initialTimeLeftRef.current - timeLeft) > 2) {
+      startTimeRef.current = null;
+      initialTimeLeftRef.current = null;
+    }
+
     if (isPlaying && timeLeft > 0) {
       // Initialize reference points for the current "play" segment
       if (startTimeRef.current === null) {
@@ -97,9 +100,9 @@ function SessionIntegrator() {
   React.useEffect(() => {
     if (!isPlaying) return;
     
-    // Ensure audio engine is resumed on play
-    const engine = getAudioEngine();
-    if (engine) engine.resume();
+    // Ensure audio context is resumed on play
+    const mixer = getAudioMixer();
+    if (mixer) mixer.resume();
 
     const elapsed = sessionDuration * 60 - timeLeft;
     
@@ -129,27 +132,13 @@ function SessionIntegrator() {
  * Only loaded/mounted after the user clicks "Enter".
  */
 export function SessionActive({ onExit, handleStartJourney, handleSaveTemplate }: SessionActiveProps) {
-  const {
-    isPlaying,
-    sessionDuration,
-    activeChakra,
-    isChakraOn,
-    chakraVolume,
-    ambientVolumes,
-    masterVolume,
-    isFullScreen,
-    showTimerPicker,
-    showSaveModal,
-    breathingActive,
-    savedTemplates,
-    breathingPatternId,
-    showBreathingPicker,
-    binauralState,
-    binauralVolume,
-    activeJourney,
-  } = useSessionStore(useShallow(s => ({
-    isPlaying: s.isPlaying,
-    sessionDuration: s.sessionDuration,
+  // Direct selectors for high-frequency/critical state
+  const isPlaying = useSessionStore(s => s.isPlaying);
+  const timeLeft = useSessionStore(s => s.timeLeft);
+  const sessionDuration = useSessionStore(s => s.sessionDuration);
+  
+  // Shallow group for the rest of the state
+  const state = useSessionStore(useShallow(s => ({
     activeChakra: s.activeChakra,
     isChakraOn: s.isChakraOn,
     chakraVolume: s.chakraVolume,
@@ -209,45 +198,45 @@ export function SessionActive({ onExit, handleStartJourney, handleSaveTemplate }
     loadTemplate: s.loadTemplate,
   })));
 
+  const {
+    activeChakra, isChakraOn, chakraVolume, ambientVolumes, masterVolume, isFullScreen,
+    showTimerPicker, showSaveModal, breathingActive, savedTemplates, breathingPatternId,
+    showBreathingPicker, binauralState, binauralVolume, activeJourney
+  } = state;
+
   const isMobile = useIsMobile(1024);
   const { handleAdvanceJourneyPhase } = useJourneyTimer();
 
-  // Audio Engine Synchronization Effect
-  React.useEffect(() => {
-    const engine = getAudioEngine();
-    if (!engine || !activeChakra) return;
-    
-    // Resume context on play
-    if (isPlaying) {
-      engine.resume();
-    }
+  // ── Audio Sync Effects (all via AudioMixer) ─────────────────────────────────
 
-    // Chakra Sound Logic
+  React.useEffect(() => {
+    const mixer = getAudioMixer();
+    if (!mixer || !activeChakra) return;
     if (isChakraOn && isPlaying) {
-      engine.playChakra(activeChakra.id);
-      engine.setChakraVolume(chakraVolume);
+      mixer.resume();
+      mixer.playChakra(activeChakra.id);
+      mixer.setChakraVolume(chakraVolume);
     } else {
-      engine.stopChakra();
+      mixer.stopChakra();
     }
   }, [isChakraOn, activeChakra, chakraVolume, isPlaying]);
 
-  // Binaural Beats Sync Effect
   React.useEffect(() => {
-    const engine = getAudioEngine();
-    if (!engine) return;
+    const mixer = getAudioMixer();
+    if (!mixer) return;
     if (binauralState === 'off') {
-      engine.stopBinaural();
+      mixer.stopBinaural();
     } else if (isPlaying) {
-      engine.playBinaural(binauralState, binauralVolume);
+      mixer.resume();
+      mixer.playBinaural(binauralState, binauralVolume);
     } else {
-      engine.stopBinaural();
+      mixer.stopBinaural();
     }
   }, [binauralState, binauralVolume, isPlaying]);
 
-  // Master Volume Sync
   React.useEffect(() => {
-    const engine = getAudioEngine();
-    if (engine) engine.setMasterVolume(masterVolume);
+    const mixer = getAudioMixer();
+    if (mixer) mixer.setMasterVolume(masterVolume);
   }, [masterVolume]);
 
   if (!activeChakra) return null;
@@ -269,11 +258,10 @@ export function SessionActive({ onExit, handleStartJourney, handleSaveTemplate }
         <AmbienceCanvas />
       </div>
 
-      <AudioPlayerGroup 
+      <AmbientPlayerGroup
         elements={LOOP_ELEMENTS}
         volumes={ambientVolumes}
         isPlaying={isPlaying}
-        loopDuration={14400}
       />
 
       <SessionLayout
@@ -307,7 +295,11 @@ export function SessionActive({ onExit, handleStartJourney, handleSaveTemplate }
           />
         }
         header={
-          <motion.header className="h-full w-full glass rounded-[24px] flex items-center justify-between px-4 md:px-8 relative backdrop-blur-2xl border border-white/5 shadow-xl">
+          <motion.header 
+            className={`w-full glass rounded-[24px] flex items-center justify-between px-4 md:px-8 relative backdrop-blur-2xl border border-white/5 shadow-xl transition-all duration-700 ${
+              isFullScreen ? 'h-14 md:h-16 mt-2' : 'h-full'
+            }`}
+          >
             <div className="relative">
               <button className="flex items-center gap-3 md:gap-4 group cursor-pointer" onClick={() => toggleTimerPicker()}>
                 <motion.div whileHover={{ scale: 1.05 }} className="p-2 md:p-3 rounded-xl bg-white/5"><Clock className="w-5 h-5" /></motion.div>
@@ -320,7 +312,12 @@ export function SessionActive({ onExit, handleStartJourney, handleSaveTemplate }
                 isOpen={showTimerPicker}
                 onClose={toggleTimerPicker}
                 onSelect={(mins) => { 
-                  setDuration(mins); 
+                  // Use atomic state update to ensure UI and Logic sync instantly
+                  useSessionStore.setState({ 
+                    sessionDuration: Math.round(mins), 
+                    timeLeft: Math.round(mins) * 60,
+                    isPlaying: false
+                  });
                   toggleTimerPicker();
                   showToast(`Duração alterada para ${mins} min`, '⏳');
                 }}
@@ -330,7 +327,12 @@ export function SessionActive({ onExit, handleStartJourney, handleSaveTemplate }
             </div>
 
             <div className="flex items-center gap-4">
-              <button className="text-xl md:text-3xl font-extralight tracking-widest font-mono" onClick={() => toggleTimerPicker()}><TimerValue /></button>
+              <button 
+                className="text-xl md:text-3xl font-extralight tracking-widest font-mono" 
+                onClick={() => toggleTimerPicker()}
+              >
+                {formatTimeSeconds(timeLeft)}
+              </button>
               
               <motion.button
                 whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}

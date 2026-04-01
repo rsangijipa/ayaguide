@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ToastContainer, showToast } from '@/components/Toast';
 import { AuroraBackground } from '@/components/AuroraBackground';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { getAudioEngine } from '@/lib/audio';
+import { getAudioMixer } from '@/lib/audioMixer';
 import type { Chakra } from '@/lib/types';
 import { LandingHero } from '@/components/LandingHero';
 import { HeroDecoration } from '@/components/HeroDecoration';
@@ -79,11 +79,10 @@ function AyahuascaSession() {
   }, []);
 
   const handleStartExperience = useCallback(() => {
-    const engine = getAudioEngine();
-    if (engine) {
-      engine.init();
-      engine.resume();
-      // Volume starts at 0 and fades in after mount for smoothness
+    const mixer = getAudioMixer();
+    if (mixer) {
+      mixer.init();
+      mixer.resume();
     }
     triggerHaptic([15, 50, 15]);
     startExperience();
@@ -119,10 +118,11 @@ function AyahuascaSession() {
   }, [setDuration, startJourney, advanceJourneyPhase, toggleBreathingGuide, togglePlay, triggerHaptic]);
 
   const handleExitExperience = useCallback(() => {
-    const engine = getAudioEngine();
-    if (engine) {
-      engine.stopChakra();
-      engine.stopBinaural();
+    const mixer = getAudioMixer();
+    if (mixer) {
+      mixer.stopChakra();
+      mixer.stopBinaural();
+      mixer.stopAll();
     }
     resetSession();
     showToast('Até a próxima jornada. Namastê 🙏', '🌑');

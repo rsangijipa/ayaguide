@@ -120,11 +120,14 @@ const initialUIState = {
 const createSessionSlice: StateCreator<SessionStore, [], [], SessionSlice> = (set) => ({
   ...initialSessionState,
   togglePlay: () => set((state) => ({ isPlaying: !state.isPlaying })),
-  setDuration: (mins) => set(() => ({ 
-    sessionDuration: mins,
-    timeLeft: mins * 60,
-    isPlaying: false
-  })),
+  setDuration: (mins) => {
+    const m = Math.round(mins);
+    set(() => ({ 
+      sessionDuration: m,
+      timeLeft: m * 60,
+      isPlaying: false
+    }));
+  },
   tick: (timeLeft) => set(() => ({ timeLeft })),
   startExperience: () => set(() => ({ hasStarted: true, isPlaying: false })),
   toggleFullscreen: () => set((state) => ({ isFullScreen: !state.isFullScreen })),
