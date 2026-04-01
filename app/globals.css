@@ -171,7 +171,55 @@
   opacity: 0;
 }
 
+/* SSR Hero Animations */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-in-bottom {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes zoom-in {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-fade-in { animation: fade-in 1s ease-out forwards; }
+.animate-slide-in-bottom { animation: slide-in-bottom 0.8s ease-out forwards; }
+.animate-zoom-in { animation: zoom-in 0.8s ease-out forwards; }
+.animate-float { animation: float 6s ease-in-out infinite; }
+
+.delay-200 { animation-delay: 0.2s; }
+.delay-500 { animation-delay: 0.5s; }
+.delay-700 { animation-delay: 0.7s; }
+.delay-1000 { animation-delay: 1s; }
+
 /* Hide drag handle by default on desktop */
 .sidebar-drag-handle {
   display: none;
+}
+
+/* Accessibility: Respect Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-delay: -1ms !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    background-attachment: initial !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
+  }
+  
+  .aurora-layer, .landing-ring, .landing-ring-reverse, .landing-particle, .btn-glow, .btn-glow-ring, .landing-float {
+    animation: none !important;
+  }
 }

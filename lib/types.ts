@@ -52,28 +52,4 @@ export interface AudioPlayerElement {
   icon?: any;
 }
 
-export interface SessionState {
-  isPlaying: boolean;
-  sessionDuration: number;
-  timeLeft: number;
-  activeChakra: Chakra | null;
-  isChakraOn: boolean;
-  chakraVolume: number;
-  ambientVolumes: Record<string, number>;
-  masterVolume: number;
-  isMuted: boolean;
-  hasStarted: boolean;
-  isFullScreen: boolean;
-  savedTemplates: SavedTemplate[];
-  showTimerPicker: boolean;
-  showSaveModal: boolean;
-  breathingActive: boolean;
-  // New: Breathing pattern
-  breathingPatternId: string;
-  showBreathingPicker: boolean;
-  // New: Binaural beats
-  binauralState: BinauralState;
-  binauralVolume: number;
-  // New: Guided journeys
-  activeJourney: ActiveJourney | null;
-}
+

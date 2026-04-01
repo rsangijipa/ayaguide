@@ -55,12 +55,18 @@ export function AudioPlayer({
         loopManagerRef.current = null;
       }
     };
-  }, []);
+  }, [src, volume, loopDuration, onLoopComplete]);
 
   // Sincronizar volume
   useEffect(() => {
     if (loopManagerRef.current) {
       loopManagerRef.current.setVolume(volume);
+      
+      // Conexão preguiçosa: Só conecta ao motor de áudio Web se o som estiver sendo usado
+      // Isso resolve a limitação de 'um som por vez' em alguns navegadores (Chrome/Edge)
+      if (volume > 0.01) {
+        loopManagerRef.current.connectToEngine();
+      }
     }
   }, [volume]);
 

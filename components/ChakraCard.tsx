@@ -1,3 +1,4 @@
+import React, { memo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Power, Volume2 } from 'lucide-react';
 
@@ -12,7 +13,7 @@ interface ChakraCardProps {
   activeColor: string;
 }
 
-export function ChakraCard({ chakra, isActive, volume, onVolumeChange, onToggle, activeColor }: ChakraCardProps) {
+export const ChakraCard = memo(function ChakraCard({ chakra, isActive, volume, onVolumeChange, onToggle, activeColor }: ChakraCardProps) {
   return (
     <motion.div
       layout
@@ -112,4 +113,4 @@ export function ChakraCard({ chakra, isActive, volume, onVolumeChange, onToggle,
       )}
     </motion.div>
   );
-}
+});

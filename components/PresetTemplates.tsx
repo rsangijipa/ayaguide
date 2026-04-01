@@ -96,7 +96,7 @@ export function PresetTemplates({ onLoadTemplate }: PresetTemplatesProps) {
               return (
                 <>
                   <p className="text-[9px] text-white/50 leading-relaxed font-light italic">
-                    "{preset.description}"
+                    &quot;{preset.description}&quot;
                   </p>
                   <div className="grid grid-cols-2 gap-2 text-[8px]">
                     <div className="p-2 rounded-lg bg-white/5 border border-white/10">

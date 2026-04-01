@@ -41,8 +41,24 @@ interface LayerProps {
 }
 
 // 1. ELEMENTAL LAYER (Fire, Lava, Embers)
-export function ElementalLayer({ register, unregister }: LayerProps) {
+export const ElementalLayer = React.memo(function ElementalLayer({ register, unregister }: LayerProps) {
   const particles = useRef<{ fire: BGParticle[], embers: BGParticle[] }>({ fire: [], embers: [] });
+  const glowCache = useRef<HTMLCanvasElement | null>(null);
+
+  const createGlowCache = (color1: string, color2: string) => {
+    const size = 32;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    const gr = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
+    gr.addColorStop(0, color1);
+    gr.addColorStop(1, color2);
+    ctx.fillStyle = gr;
+    ctx.fillRect(0, 0, size, size);
+    return canvas;
+  };
 
   useEffect(() => {
     const p = particles.current;
@@ -56,17 +72,23 @@ export function ElementalLayer({ register, unregister }: LayerProps) {
         p.embers.push({ x: 0.15 + Math.random() * 0.7, y: 0.9 + Math.random() * 0.1, vx: (Math.random() - 0.5) * 0.002, vy: -(0.002 + Math.random() * 0.004), sz: 1 + Math.random() * 3, lf: Math.random(), ml: 0.8 + Math.random() * 0.4, hue: 15 + Math.random() * 25 });
     }
 
+    if (!glowCache.current) {
+        glowCache.current = createGlowCache('rgba(255, 230, 200, 1)', 'rgba(255, 50, 0, 0)');
+    }
+
     const draw: DrawFunction = (ctx, w, h, t, v) => {
       const firev = (v.fire || 0) * 1.2 + (v.lava || 0) * 0.8;
       if (firev > 0.04) {
         ctx.save();
         p.fire.forEach(p => {
-          p.x! += p.vx! + (Math.random() - 0.5) * 0.003; p.y += p.vy!; p.lf! += 0.01; p.sz! *= 0.997;
+          p.x! += p.vx! + (Math.random() - 1) * 0.001; p.y += p.vy!; p.lf! += 0.01; p.sz! *= 0.997;
           if (p.lf! >= p.ml! || p.sz! < 0.5) { p.x = 0.15 + Math.random() * 0.7; p.y = 0.5 + Math.random() * 0.45; p.lf = 0; p.sz = 3 + Math.random() * 10; }
-          const pg = p.lf! / p.ml!; ctx.globalAlpha = Math.min(1, firev * (1 - pg) * 0.6);
-          const gr = ctx.createRadialGradient(p.x! * w, p.y * h, 0, p.x! * w, p.y * h, p.sz! * 1.5);
-          gr.addColorStop(0, `hsl(${p.hue! + 35}, 100%, 85%)`); gr.addColorStop(1, `hsla(${p.hue! - 10}, 90%, 25%, 0)`);
-          ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(p.x! * w, p.y * h, p.sz! * 1.5, 0, Math.PI * 2); ctx.fill();
+          const pg = p.lf! / p.ml!; 
+          ctx.globalAlpha = Math.min(1, firev * (1 - pg) * 0.6);
+          if (glowCache.current) {
+            const sz = p.sz! * 3;
+            ctx.drawImage(glowCache.current, p.x! * w - sz/2, p.y * h - sz/2, sz, sz);
+          }
         });
         const emberCnt = Math.floor(p.embers.length * firev);
         for (let i = 0; i < emberCnt; i++) {
@@ -80,12 +102,12 @@ export function ElementalLayer({ register, unregister }: LayerProps) {
     };
     register('elemental', draw);
     return () => unregister('elemental');
-  }, []);
+  }, [register, unregister]);
   return null;
-}
+}, (prev, next) => true);
 
 // 2. WATER LAYER (Rain, Waves, Bubbles)
-export function WaterLayer({ register, unregister }: LayerProps) {
+export const WaterLayer = React.memo(function WaterLayer({ register, unregister }: LayerProps) {
   const particles = useRef<{ rain: BGParticle[], waves: BGParticle[], bubbles: BGParticle[] }>({ rain: [], waves: [], bubbles: [] });
 
   useEffect(() => {
@@ -126,12 +148,12 @@ export function WaterLayer({ register, unregister }: LayerProps) {
     };
     register('water', draw);
     return () => unregister('water');
-  }, []);
+  }, [register, unregister]);
   return null;
-}
+}, (prev, next) => true);
 
 // 3. WIND LAYER (Leaves, Clouds)
-export function WindLayer({ register, unregister }: LayerProps) {
+export const WindLayer = React.memo(function WindLayer({ register, unregister }: LayerProps) {
   const particles = useRef<{ leaves: BGParticle[], clouds: BGParticle[] }>({ leaves: [], clouds: [] });
 
   useEffect(() => {
@@ -161,12 +183,12 @@ export function WindLayer({ register, unregister }: LayerProps) {
     };
     register('wind', draw);
     return () => unregister('wind');
-  }, []);
+  }, [register, unregister]);
   return null;
-}
+}, (prev, next) => true);
 
 // 4. NATURE LAYER (Birds, Petals)
-export function NatureLayer({ register, unregister }: LayerProps) {
+export const NatureLayer = React.memo(function NatureLayer({ register, unregister }: LayerProps) {
   const particles = useRef<{ birds: BGParticle[], petals: BGParticle[] }>({ birds: [], petals: [] });
 
   useEffect(() => {
@@ -195,12 +217,12 @@ export function NatureLayer({ register, unregister }: LayerProps) {
     };
     register('nature', draw);
     return () => unregister('nature');
-  }, []);
+  }, [register, unregister]);
   return null;
-}
+}, (prev, next) => true);
 
 // 5. ETHEREAL LAYER (Stars)
-export function EtherealLayer({ register, unregister }: LayerProps) {
+export const EtherealLayer = React.memo(function EtherealLayer({ register, unregister }: LayerProps) {
   const particles = useRef<{ stars: BGParticle[] }>({ stars: [] });
 
   useEffect(() => {
@@ -226,6 +248,6 @@ export function EtherealLayer({ register, unregister }: LayerProps) {
     };
     register('ethereal', draw);
     return () => unregister('ethereal');
-  }, []);
+  }, [register, unregister]);
   return null;
-}
+}, (prev, next) => true);

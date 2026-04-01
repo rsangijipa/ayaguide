@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { memo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Brain, Volume2 } from 'lucide-react';
 import { BINAURAL_DELTAS } from '@/lib/audio';
@@ -22,7 +22,7 @@ const WAVE_STATES: { id: BinauralState; label: string; emoji: string; color: str
   { id: 'gamma', label: 'Gamma', emoji: '⚡', color: '#f97316', desc: 'Percepção' },
 ];
 
-function WaveVisualization({ stateId, isActive, color }: { stateId: BinauralState; isActive: boolean; color: string }) {
+const WaveVisualization = memo(function WaveVisualization({ stateId, isActive, color }: { stateId: BinauralState; isActive: boolean; color: string }) {
   const config = BINAURAL_DELTAS[stateId];
   if (!config) return null;
 
@@ -51,9 +51,9 @@ function WaveVisualization({ stateId, isActive, color }: { stateId: BinauralStat
       />
     </svg>
   );
-}
+});
 
-export function BinauralPanel({ binauralState, binauralVolume, onStateChange, onVolumeChange, chakraColor }: BinauralPanelProps) {
+export const BinauralPanel = memo(function BinauralPanel({ binauralState, binauralVolume, onStateChange, onVolumeChange, chakraColor }: BinauralPanelProps) {
   const isActive = binauralState !== 'off';
   const activeWave = WAVE_STATES.find(w => w.id === binauralState);
 
@@ -164,4 +164,4 @@ export function BinauralPanel({ binauralState, binauralVolume, onStateChange, on
       </AnimatePresence>
     </div>
   );
-}
+});

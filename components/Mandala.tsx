@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import { 
   calculateBands,
   drawPetal,
@@ -31,7 +31,7 @@ export function Mandala({
 }: MandalaProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rotationTimeRef = useRef(0);
-  const lastTimeRef = useRef(performance.now());
+  const lastTimeRef = useRef(0);
   const rafId = useRef<number | null>(null);
   const audioDataRef = useRef(new Uint8Array(64));
   
@@ -41,6 +41,7 @@ export function Mandala({
   const chakraIdRef = useRef(chakraId);
   const paletteRef = useRef(chakraPalette);
   const isMobileRef = useRef(typeof window !== 'undefined' && window.innerWidth < 768);
+  const isVisibleRef = useRef(true);
 
   // Sync refs with props
   useEffect(() => {
@@ -54,12 +55,19 @@ export function Mandala({
     const updateSizeInfo = () => {
         isMobileRef.current = window.innerWidth < 768;
     };
+    const updateVisibility = () => {
+        isVisibleRef.current = document.visibilityState === 'visible';
+    };
     updateSizeInfo();
     window.addEventListener('resize', updateSizeInfo);
-    return () => window.removeEventListener('resize', updateSizeInfo);
+    document.addEventListener('visibilitychange', updateVisibility);
+    return () => {
+        window.removeEventListener('resize', updateSizeInfo);
+        document.removeEventListener('visibilitychange', updateVisibility);
+    };
   }, []);
 
-  const core = (ctx: CanvasRenderingContext2D, color: string, r: number, hi: number) => {
+  const core = useCallback((ctx: CanvasRenderingContext2D, color: string, r: number, hi: number) => {
     const gr = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 3.5);
     gr.addColorStop(0, color.replace(/0\.\d+\)$/, '0.95)').replace('0.8', '0.95').replace('0.4', '0.95'));
     gr.addColorStop(0.45, color.replace(/0\.\d+\)$/, '0.35)').replace('0.8', '0.35').replace('0.4', '0.35'));
@@ -68,9 +76,9 @@ export function Mandala({
     ctx.beginPath(); ctx.arc(0, 0, r * 3.5, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = 'white'; ctx.globalAlpha = 0.9 + hi * 0.08;
     ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
-  };
+  }, []);
 
-  const drawRoot = (ctx: CanvasRenderingContext2D, cx: number, cy: number, t: number, a: {lo: number, mi: number, hi: number}, v: Record<string, number>, c: string) => {
+  const drawRoot = useCallback((ctx: CanvasRenderingContext2D, cx: number, cy: number, t: number, a: {lo: number, mi: number, hi: number}, v: Record<string, number>, c: string) => {
     const s = Math.min(cx, cy) * 0.85; const rb = t * 0.003;
     const wm = emod(v, ['water', 'ocean'], t); const fm = emod(v, ['fire', 'lava'], t, 'sin');
     const m = isMobileRef.current ? 0.5 : 1;
@@ -92,9 +100,9 @@ export function Mandala({
     ctx.save(); ctx.rotate(rb*1.2); ctx.strokeStyle = c; ctx.globalAlpha = 0.5+a.hi*0.25; ctx.lineWidth = 1.5;
     const cr = s*0.22; ctx.beginPath(); ctx.moveTo(-cr, 0); ctx.lineTo(cr, 0); ctx.moveTo(0, -cr); ctx.lineTo(0, cr); ctx.stroke();
     drawRing(ctx, cr, c, 0.4+a.hi*0.2, 1.5); ctx.restore(); core(ctx, c, s*(0.06+a.hi*0.04), a.hi); ctx.restore();
-  };
+  }, [core]);
 
-  const drawSacral = (ctx: CanvasRenderingContext2D, cx: number, cy: number, t: number, a: {lo: number, mi: number, hi: number}, v: Record<string, number>, c: string) => {
+  const drawSacral = useCallback((ctx: CanvasRenderingContext2D, cx: number, cy: number, t: number, a: {lo: number, mi: number, hi: number}, v: Record<string, number>, c: string) => {
     const s = Math.min(cx, cy) * 0.85; const rb = t * 0.004;
     const wm = emod(v, ['water', 'ocean', 'waterfall'], t); const m = isMobileRef.current ? 0.5 : 1;
     ctx.save(); ctx.translate(cx, cy); ctx.save(); ctx.rotate(rb * 0.4);
@@ -109,9 +117,9 @@ export function Mandala({
     for(let i=0; i<sc; i++) drawPetal(ctx, s*0.15, s*0.16, s*(0.56+wm*0.07), (i/sc)*Math.PI*2+Math.PI/6-rb*0.6, c, 0.4);
     if(wm>0.02) for(let r=1; r<=Math.floor(4*m); r++) drawRing(ctx, s*(0.18+r*0.08)*(1+wm*0.13*Math.sin(t*0.05+r*1.2)), '#38BDF8', wm*(0.32-r*0.055), 0.9);
     core(ctx, c, s*(0.062+a.mi*0.035), a.hi); ctx.restore();
-  };
+  }, [core]);
 
-  const drawSolar = (ctx: CanvasRenderingContext2D, cx: number, cy: number, t: number, a: {lo: number, mi: number, hi: number}, v: Record<string, number>, c: string) => {
+  const drawSolar = useCallback((ctx: CanvasRenderingContext2D, cx: number, cy: number, t: number, a: {lo: number, mi: number, hi: number}, v: Record<string, number>, c: string) => {
     const s = Math.min(cx, cy) * 0.85; const rb = t * 0.005;
     const fm = emod(v, ['fire', 'lava'], t, 'sin'); const wm = emod(v, ['wind', 'storm'], t); const m = isMobileRef.current ? 0.5 : 1;
     ctx.save(); ctx.translate(cx, cy); ctx.save(); ctx.rotate(rb * 0.4);
@@ -130,9 +138,9 @@ export function Mandala({
     for(let i=0; i<pc; i++) drawPetal(ctx, s*0.14, s*0.09, s*(0.38+fm*0.08+a.mi*0.04), (i/pc)*Math.PI*2+Math.PI/pc-rb*0.5, c, 0.42);
     ctx.save(); ctx.rotate(rb*0.6); drawPoly(ctx, 3, s*0.33, -Math.PI/6, c, 0.18, 1.5); ctx.restore();
     core(ctx, c, s*(0.065+a.hi*0.04), a.hi); ctx.restore();
-  };
+  }, [core]);
 
-  const drawHeart = (ctx: CanvasRenderingContext2D, cx: number, cy: number, t: number, a: {lo: number, mi: number, hi: number}, v: Record<string, number>, c: string) => {
+  const drawHeart = useCallback((ctx: CanvasRenderingContext2D, cx: number, cy: number, t: number, a: {lo: number, mi: number, hi: number}, v: Record<string, number>, c: string) => {
     const s = Math.min(cx, cy) * 0.85; const rb = t * 0.0035;
     const wm = emod(v, ['water', 'rain'], t); const bm = emod(v, ['bells', 'singing_bowl'], t, 'cos'); const m = isMobileRef.current ? 0.5 : 1;
     ctx.save(); ctx.translate(cx, cy); ctx.save(); ctx.rotate(rb * 0.3);
@@ -147,9 +155,9 @@ export function Mandala({
     for(let i=0; i<pc; i++) drawPetal(ctx, s*0.12, s*0.13, s*(0.54+wm*0.05), (i/pc)*Math.PI*2+Math.PI/pc-rb*0.5, c, 0.36);
     if(bm>0.02) for(let r=1; r<=Math.floor(6*m); r++) drawRing(ctx, s*(0.09+r*0.07+bm*0.04*Math.sin(t*0.04+r*0.8)), '#C084FC', bm*(0.38-r*0.05), 1);
     core(ctx, c, s*(0.06+a.hi*0.038), a.hi); ctx.restore();
-  };
+  }, [core]);
 
-  const drawThroat = (ctx: CanvasRenderingContext2D, cx: number, cy: number, t: number, a: {lo: number, mi: number, hi: number}, v: Record<string, number>, c: string) => {
+  const drawThroat = useCallback((ctx: CanvasRenderingContext2D, cx: number, cy: number, t: number, a: {lo: number, mi: number, hi: number}, v: Record<string, number>, c: string) => {
     const s = Math.min(cx, cy) * 0.85; const rb = t * 0.004;
     const wm = emod(v, ['wind', 'leaves'], t); const bm = emod(v, ['singing_bowl', 'bells'], t, 'cos'); const m = isMobileRef.current ? 0.5 : 1;
     ctx.save(); ctx.translate(cx, cy); drawRing(ctx, s*0.92, c, 0.18, 1); ctx.save(); ctx.rotate(rb * 0.3);
@@ -163,9 +171,9 @@ export function Mandala({
     for(let i=0; i<pc; i++) drawPetal(ctx, s*0.08, s*0.07, s*(0.6+a.mi*0.04), (i/pc)*Math.PI*2+Math.PI/pc-rb*0.5, c, 0.33);
     for(let r=1; r<=Math.floor(7*m); r++) drawRing(ctx, s*(0.09+r*0.055+bm*0.035*Math.sin(t*0.04+r)), c, 0.13+bm*0.18-r*0.015, 0.9);
     core(ctx, c, s*(0.055+a.hi*0.033), a.hi); ctx.restore();
-  };
+  }, [core]);
 
-  const drawThirdEye = (ctx: CanvasRenderingContext2D, cx: number, cy: number, t: number, a: {lo: number, mi: number, hi: number}, v: Record<string, number>, c: string) => {
+  const drawThirdEye = useCallback((ctx: CanvasRenderingContext2D, cx: number, cy: number, t: number, a: {lo: number, mi: number, hi: number}, v: Record<string, number>, c: string) => {
     const s = Math.min(cx, cy) * 0.85; const rb = t * 0.003;
     const mm = emod(v, ['bells', 'gong', 'singing_bowl'], t, 'cos'); const m = isMobileRef.current ? 0.5 : 1;
     ctx.save(); ctx.translate(cx, cy); drawRing(ctx, s*0.92, c, 0.22, 1.5); ctx.save(); ctx.rotate(rb * 0.2);
@@ -181,9 +189,9 @@ export function Mandala({
     const pc = Math.max(12, Math.floor(24*m));
     ctx.save(); ctx.rotate(rb*0.4); for(let i=0; i<pc; i++) drawPetal(ctx, s*0.12, s*0.045, s*0.7, (i/pc)*Math.PI*2, c, 0.25); ctx.restore();
     core(ctx, c, s*(0.1+a.hi*0.04), a.hi); ctx.restore();
-  };
+  }, [core]);
 
-  const drawCrown = (ctx: CanvasRenderingContext2D, cx: number, cy: number, t: number, a: {lo: number, mi: number, hi: number}, v: Record<string, number>, c: string) => {
+  const drawCrown = useCallback((ctx: CanvasRenderingContext2D, cx: number, cy: number, t: number, a: {lo: number, mi: number, hi: number}, v: Record<string, number>, c: string) => {
     const s = Math.min(cx, cy) * 0.85; const rb = t * 0.0025;
     const gm = emod(v, ['gong', 'bells', 'singing_bowl'], t, 'cos'); const m = isMobileRef.current ? 0.5 : 1;
     ctx.save(); ctx.translate(cx, cy); ctx.save(); ctx.rotate(rb * 0.15);
@@ -198,7 +206,7 @@ export function Mandala({
         const pc = Math.max(1, pcnt); for(let i=0; i<pc; i++) drawPetal(ctx, s*(li<5?pRad[li+1]:0.1), s*0.08, ph, (i/pc)*Math.PI*2+rb*rs, `hsl(${278+li*9},68%,72%)`, pAlp[li]+gm*0.08);
     });
     core(ctx, c, s*(0.07+a.hi*0.045), a.hi); ctx.restore();
-  };
+  }, [core]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -229,11 +237,13 @@ export function Mandala({
     observer.observe(canvas);
     resize();
 
+    lastTimeRef.current = performance.now();
+
     const animate = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2.0);
       const w = canvas.width / dpr;
       const h = canvas.height / dpr;
-      if (w === 0 || h === 0) {
+      if (w === 0 || h === 0 || !isVisibleRef.current) {
         rafId.current = requestAnimationFrame(animate);
         return;
       }
@@ -274,11 +284,16 @@ export function Mandala({
       observer.disconnect();
       if (rafId.current) cancelAnimationFrame(rafId.current);
     };
-  }, []);
+  }, [drawCrown, drawHeart, drawRoot, drawSacral, drawSolar, drawThirdEye, drawThroat]);
 
   return (
     <div className="relative w-full h-full min-h-[inherit] flex items-center justify-center overflow-hidden">
-      <canvas ref={canvasRef} className="w-full h-full object-contain pointer-events-none" />
+      <canvas 
+        ref={canvasRef} 
+        className="w-full h-full object-contain pointer-events-none" 
+        role="img"
+        aria-label="Mandala animada reagindo aos sons da meditação"
+      />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import React, { memo } from 'react';
 import { motion } from 'motion/react';
 import { LucideIcon, Power, Volume2 } from 'lucide-react';
 
@@ -13,7 +14,7 @@ interface ElementCardProps {
   description?: string;
 }
 
-export function ElementCard({
+export const ElementCard = memo(function ElementCard({
   id,
   name,
   icon: Icon,
@@ -198,4 +199,4 @@ export function ElementCard({
       )}
     </motion.div>
   );
-}
+});

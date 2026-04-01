@@ -30,13 +30,16 @@ export class AudioLoopManager {
       this.audio = new Audio(this.src);
       this.audio.loop = true;
       this.audio.crossOrigin = "anonymous";
+      this.audio.preload = "none";
       this.audio.volume = this.volume;
-      
-      // Conectar ao engine de áudio para processamento (analyser, gain)
-      const engine = getAudioEngine();
-      if (engine && this.audio) {
-        engine.connectMediaElement(this.audio);
-      }
+    }
+  }
+
+  public connectToEngine(): void {
+    if (typeof window === "undefined" || !this.audio) return;
+    const engine = getAudioEngine();
+    if (engine) {
+      engine.connectMediaElement(this.audio);
     }
   }
 
@@ -135,24 +138,22 @@ export class AudioLoopManager {
   private startProgressMonitor(): void {
     this.stopProgressMonitor();
     
-    const checkProgress = () => {
-      if (!this.isPlayingActive) return;
+    this.timerId = window.setInterval(() => {
+      if (!this.isPlayingActive) {
+        this.stopProgressMonitor();
+        return;
+      }
 
       if (this.getElapsedTime() >= this.loopDurationMs) {
         this.stop();
         if (this.onComplete) this.onComplete();
-        return;
       }
-
-      this.timerId = window.requestAnimationFrame(checkProgress);
-    };
-
-    this.timerId = window.requestAnimationFrame(checkProgress);
+    }, 1000);
   }
 
   private stopProgressMonitor(): void {
     if (this.timerId !== undefined) {
-      window.cancelAnimationFrame(this.timerId);
+      window.clearInterval(this.timerId);
       this.timerId = undefined;
     }
   }
@@ -160,6 +161,8 @@ export class AudioLoopManager {
   public cleanup(): void {
     this.stop();
     if (this.audio) {
+      const engine = getAudioEngine();
+      if (engine) engine.disconnectMediaElement(this.audio);
       this.audio.src = "";
       this.audio = null;
     }

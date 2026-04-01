@@ -23,6 +23,32 @@ import { CHAKRAS } from '@/lib/constants';
 
 import type { Chakra, SavedTemplate, BinauralState } from '@/lib/types';
 
+interface SidebarProps {
+  chakras: Chakra[];
+  activeChakra: Chakra;
+  isChakraOn: boolean;
+  chakraVolume: number;
+  onChakraVolumeChange: (vol: number) => void;
+  onChakraToggle: (type: 'on' | 'off') => void;
+  onChakraSelect: (chakra: Chakra) => void;
+  ambientVolumes: Record<string, number>;
+  onAmbientVolumeChange: (id: string, vol: number) => void;
+  onClearAll: () => void;
+  masterVolume: number;
+  onMasterVolumeChange: (vol: number) => void;
+  savedTemplates: SavedTemplate[];
+  onSaveTemplate: () => void;
+  onLoadTemplate: (template: SavedTemplate) => void;
+  onDeleteTemplate: (id: string) => void;
+  isMobile?: boolean;
+  binauralState: BinauralState;
+  binauralVolume: number;
+  onBinauralStateChange: (state: BinauralState) => void;
+  onBinauralVolumeChange: (vol: number) => void;
+  onStartJourney: (journeyId: string) => void;
+  isJourneyActive: boolean;
+}
+
 export const Sidebar = React.memo(function Sidebar({
   chakras,
   activeChakra,
@@ -47,7 +73,7 @@ export const Sidebar = React.memo(function Sidebar({
   onBinauralVolumeChange,
   onStartJourney,
   isJourneyActive,
-}: any) {
+}: SidebarProps) {
   const [expandedSection, setExpandedSection] = useState<'chakras' | 'elements' | 'templates' | 'binaural' | 'journeys' | null>(null);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [showAllElements, setShowAllElements] = useState(false);
@@ -109,6 +135,7 @@ export const Sidebar = React.memo(function Sidebar({
             <motion.button 
               whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
               onClick={onClearAll}
+              data-testid="clear-all-sounds-button"
               className="px-2 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/10 text-[9px] uppercase tracking-widest text-red-400/80 transition-all flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-red-500/40 outline-none"
               aria-label="Limpar todos os sons ativos"
             >
@@ -129,6 +156,7 @@ export const Sidebar = React.memo(function Sidebar({
             <input
               type="range" min="0" max="1" step="0.01" value={masterVolume}
               onChange={(e) => onMasterVolumeChange(parseFloat(e.target.value))}
+              data-testid="master-volume-slider"
               className="w-full h-1 bg-white/10 rounded-full appearance-none cursor-pointer accent-transparent focus:outline-none"
               style={{ background: `linear-gradient(to right, ${activeChakra.palette.primary} ${masterVolume * 100}%, rgba(255,255,255,0.1) ${masterVolume * 100}%)` }}
               aria-label="Volume mestre"
@@ -146,6 +174,7 @@ export const Sidebar = React.memo(function Sidebar({
         <div className="flex flex-col border-b border-white/5 pb-2">
           <button
             onClick={() => toggleSection('chakras')}
+            data-testid="section-toggle-chakras"
             className={`w-full flex items-center justify-between p-4 px-5 rounded-2xl transition-all duration-300 outline-none focus-visible:ring-2 focus-visible:ring-white/20 ${
               expandedSection === 'chakras' 
                 ? 'bg-white/10 text-white' 
@@ -192,6 +221,7 @@ export const Sidebar = React.memo(function Sidebar({
         <div className="flex flex-col border-b border-white/5 pb-2">
           <button
             onClick={() => toggleSection('elements')}
+            data-testid="section-toggle-elements"
             className={`w-full flex items-center justify-between p-4 px-5 rounded-2xl transition-all duration-300 outline-none focus-visible:ring-2 focus-visible:ring-white/20 ${
               expandedSection === 'elements' 
                 ? 'bg-white/10 text-white' 

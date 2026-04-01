@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { memo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, SkipForward, Compass } from 'lucide-react';
 import { getJourney, JOURNEYS, formatJourneyDuration } from '@/lib/journeys';
@@ -15,7 +15,7 @@ interface JourneyPlayerProps {
   onExit: () => void;
 }
 
-export function JourneyPlayer({ activeJourney, isPlaying, onAdvancePhase, onExit }: JourneyPlayerProps) {
+export const JourneyPlayer = memo(function JourneyPlayer({ activeJourney, isPlaying, onAdvancePhase, onExit }: JourneyPlayerProps) {
   if (!activeJourney) return null;
   
   const journey = getJourney(activeJourney.journeyId);
@@ -106,7 +106,7 @@ export function JourneyPlayer({ activeJourney, isPlaying, onAdvancePhase, onExit
                     transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                     className="text-[10px] text-white/40 tracking-wider font-light italic truncate"
                   >
-                    "{currentPhase.message}"
+                    &quot;{currentPhase.message}&quot;
                   </motion.p>
                 </AnimatePresence>
               </div>
@@ -157,7 +157,7 @@ export function JourneyPlayer({ activeJourney, isPlaying, onAdvancePhase, onExit
       </div>
     </motion.div>
   );
-}
+});
 
 // ===================== Journey Selector (for Sidebar) =====================
 
@@ -167,7 +167,7 @@ interface JourneySelectorProps {
   chakraColor: string;
 }
 
-export function JourneySelector({ onStart, isJourneyActive }: JourneySelectorProps) {
+export const JourneySelector = memo(function JourneySelector({ onStart, isJourneyActive, chakraColor }: JourneySelectorProps) {
   return (
     <div className="grid gap-3">
       {JOURNEYS.map((journey, idx) => (
@@ -235,4 +235,4 @@ export function JourneySelector({ onStart, isJourneyActive }: JourneySelectorPro
       ))}
     </div>
   );
-}
+});

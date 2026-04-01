@@ -2,8 +2,9 @@
 
 import { create, StateCreator } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { safeLocalStorage } from './storage';
 import { 
-  Chakra, SessionState, SavedTemplate, 
+  Chakra, SavedTemplate, 
   BinauralState, ActiveJourney 
 } from './types';
 import { CHAKRAS } from './constants';
@@ -21,6 +22,7 @@ interface SessionSlice {
   tick: (timeLeft: number) => void;
   startExperience: () => void;
   toggleFullscreen: () => void;
+  resetSession: () => void;
 }
 
 interface AudioSlice {
@@ -126,6 +128,12 @@ const createSessionSlice: StateCreator<SessionStore, [], [], SessionSlice> = (se
   tick: (timeLeft) => set(() => ({ timeLeft })),
   startExperience: () => set(() => ({ hasStarted: true, isPlaying: false })),
   toggleFullscreen: () => set((state) => ({ isFullScreen: !state.isFullScreen })),
+  resetSession: () => set(() => ({
+    ...initialSessionState,
+    ...initialAudioState,
+    ...initialUIState,
+    activeJourney: null,
+  })),
 });
 
 const createAudioSlice: StateCreator<SessionStore, [], [], AudioSlice> = (set) => ({
@@ -212,24 +220,17 @@ export const useSessionStore = create<SessionStore>()(
     }),
     {
       name: 'ayaguide-session-store',
-      storage: createJSONStorage(() => (typeof window !== 'undefined' ? window.localStorage : dummyStorage)),
+      version: 1,
+      storage: createJSONStorage(() => safeLocalStorage),
       partialize: (state) => ({
         savedTemplates: state.savedTemplates,
         masterVolume: state.masterVolume,
-        ambientVolumes: state.ambientVolumes,
-        activeChakra: state.activeChakra,
         chakraVolume: state.chakraVolume,
         isMuted: state.isMuted,
         binauralVolume: state.binauralVolume,
         breathingPatternId: state.breathingPatternId,
+        isSidebarExpanded: state.isSidebarExpanded,
       }),
     }
   )
 );
-
-// Helper for SSR safety
-const dummyStorage = {
-  getItem: () => null,
-  setItem: () => {},
-  removeItem: () => {},
-};

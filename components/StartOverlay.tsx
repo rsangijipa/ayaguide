@@ -171,6 +171,7 @@ export function StartOverlay({ hasStarted, onStart, isMounted }: StartOverlayPro
               
               <button
                 onClick={onStart}
+                data-testid="start-session-button"
                 className="relative group px-14 py-5 rounded-full overflow-hidden btn-glow transition-all duration-500 hover:scale-105"
                 style={{ background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(192, 132, 252, 0.1) 50%, rgba(139, 92, 246, 0.15) 100%)', border: '1px solid rgba(192, 132, 252, 0.25)' }}
               >

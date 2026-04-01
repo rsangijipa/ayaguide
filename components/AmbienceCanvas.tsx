@@ -11,13 +11,17 @@ import {
 } from './canvas/AmbienceLayers';
 
 import { useSessionStore } from '@/lib/store';
+import { useShallow } from 'zustand/react/shallow';
 
 interface AmbienceCanvasProps {
   // volumes and chakraColor are now read directly from store for better performance
 }
 
 export function AmbienceCanvas({ }: AmbienceCanvasProps) {
-  const { ambientVolumes, activeChakra } = useSessionStore();
+  const { ambientVolumes, activeChakra } = useSessionStore(useShallow(s => ({
+    ambientVolumes: s.ambientVolumes,
+    activeChakra: s.activeChakra
+  })));
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameRef = useRef(0);
   const rafId = useRef<number | null>(null);
@@ -57,6 +61,7 @@ export function AmbienceCanvas({ }: AmbienceCanvasProps) {
       canvas.height = window.innerHeight * dpr;
       canvas.style.width = '100vw';
       canvas.style.height = '100vh';
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.scale(dpr, dpr);
     };
 
@@ -118,6 +123,8 @@ export function AmbienceCanvas({ }: AmbienceCanvasProps) {
       <canvas
         ref={canvasRef}
         className="fixed inset-0 pointer-events-none z-[1] w-screen h-screen"
+        role="img"
+        aria-label="Fundo de ambiente animado com partículas e camadas de profundidade"
       />
       <ElementalLayer register={registerLayer} unregister={unregisterLayer} />
       <WaterLayer register={registerLayer} unregister={unregisterLayer} />

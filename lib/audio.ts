@@ -71,8 +71,17 @@ class AudioEngine {
     this.filterNode.frequency.value = 2000;
     this.filterNode.Q.value = 1;
     this.filterNode.connect(this.chakraGain);
-
     this.createReverb();
+
+    // Auto-resume on visibility change (Tab switching / Phone sleep)
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          this.resume();
+        }
+      });
+    }
+
     this.isInitialized = true;
   }
 
@@ -97,9 +106,10 @@ class AudioEngine {
 
   playChakra(chakraId: string, volume: number = 0.5) {
     if (!this.ctx) this.init();
-    if (!this.ctx) return;
+    if (!this.ctx || !this.isInitialized) return;
 
     const baseFreq = CHAKRA_FREQUENCIES[chakraId] || 432;
+    const now = this.ctx.currentTime;
     
     // If already playing this frequency, just adjust volume
     if (this.chakraOscs.length > 0 && this.chakraOscs[0].frequency.value === baseFreq) {
@@ -115,12 +125,9 @@ class AudioEngine {
     this.lfoOsc = null;
 
     if (prevOscs.length > 0) {
-      const fadeOutTime = 0.5;
-      const now = this.ctx.currentTime;
-      // We assume they are connected to chakraGain or filterNode
-      // To truly crossfade, we'd need multiple gain nodes. 
-      // For now, we use a quick target ramp for the main gain before swapping content.
-      this.chakraGain!.gain.setTargetAtTime(0, now, 0.1);
+      const fadeOutTime = 0.4;
+      // Quick but click-free ramp to zero
+      this.chakraGain!.gain.linearRampToValueAtTime(0, now + 0.1);
       
       setTimeout(() => {
         prevOscs.forEach(osc => {
@@ -280,13 +287,13 @@ class AudioEngine {
 
   setBinauralVolume(vol: number) {
     if (this.binauralGain && this.ctx) {
-      this.binauralGain.gain.setTargetAtTime(vol * 0.4, this.ctx.currentTime, 0.3);
+      this.binauralGain.gain.linearRampToValueAtTime(vol * 0.4, this.ctx.currentTime + 0.1);
     }
   }
 
   stopBinaural(fadeTime: number = 0.5) {
     if (this.binauralGain && this.ctx) {
-      this.binauralGain.gain.setTargetAtTime(0, this.ctx.currentTime, fadeTime / 4);
+      this.binauralGain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + (fadeTime / 2));
     }
     const nodes = [this.binauralOscL, this.binauralOscR, this.binauralPanL, this.binauralPanR, this.binauralGain];
     this.binauralOscL = null; this.binauralOscR = null; 
@@ -297,6 +304,20 @@ class AudioEngine {
     setTimeout(() => {
       nodes.forEach(node => { if (node) try { (node as any).stop?.(); node.disconnect(); } catch {} });
     }, fadeTime * 1000);
+  }
+
+  /**
+   * disconnectMediaElement: Prevents memory leaks by cleaning up 
+   * MediaElementAudioSourceNode references when elements are no longer needed.
+   */
+  disconnectMediaElement(el: HTMLMediaElement) {
+    const source = this.sources.get(el);
+    if (source) {
+      try {
+        source.disconnect();
+      } catch {}
+      this.sources.delete(el);
+    }
   }
 }
 
