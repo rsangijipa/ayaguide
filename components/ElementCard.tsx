@@ -87,12 +87,13 @@ export function ElementCard({
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => onVolumeChange(id, isActive ? 0 : 0.5)}
-            className={`p-2 rounded-lg transition-all flex-shrink-0 ${
+            className={`p-2 rounded-lg transition-all flex-shrink-0 focus-visible:ring-2 focus-visible:ring-white/40 outline-none ${
               isActive
                 ? 'bg-white text-black shadow-md'
                 : 'bg-white/5 text-white/30 hover:text-white hover:bg-white/10'
             }`}
-            aria-label={`Toggle ${name}`}
+            aria-label={isActive ? `Desativar som de ${name}` : `Ativar som de ${name}`}
+            aria-pressed={isActive}
           >
             <Power className={`w-3.5 h-3.5 ${isActive ? 'fill-current' : ''}`} />
           </motion.button>
@@ -170,11 +171,13 @@ export function ElementCard({
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => onVolumeChange(id, preset.value)}
-                  className={`flex-1 px-2 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all ${
+                  className={`flex-1 px-2 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all focus-visible:ring-1 focus-visible:ring-white/30 outline-none ${
                     Math.abs(volume - preset.value) < 0.05
                       ? 'bg-white text-black shadow-md'
                       : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white/60'
                   }`}
+                  aria-label={`Volume ${preset.label} para ${name}`}
+                  aria-pressed={Math.abs(volume - preset.value) < 0.05}
                 >
                   {preset.label}
                 </motion.button>

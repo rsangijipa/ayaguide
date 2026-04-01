@@ -1,75 +1,67 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { getAudioEngine } from '@/lib/audio';
-import { MandalaCard } from '@/components/MandalaCard';
-import { AmbienceCanvas } from '@/components/AmbienceCanvas';
-import { Sidebar } from '@/components/Sidebar';
-import { AudioPlayerGroup } from '@/components/AudioPlayer';
-import { ToastContainer, showToast } from '@/components/Toast';
-import { BreathingGuide } from '@/components/BreathingGuide';
-import { BreathingPicker } from '@/components/BreathingPicker';
-import { TimerDropdown } from '@/components/TimerDropdown';
-import { SessionLayout } from '@/components/SessionLayout';
-import { StartOverlay } from '@/components/StartOverlay';
-import { AuroraBackground } from '@/components/AuroraBackground';
-import { SaveTemplateModal } from '@/components/SaveTemplateModal';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { JourneyPlayer } from '@/components/JourneyPlayer';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useSessionStore } from '@/lib/store';
+import dynamic from 'next/dynamic';
+import { 
+  Pause, Play, Clock, Maximize2, Minimize2, Wind as WindIcon, LogOut, ChevronDown 
+} from 'lucide-react';
 import { CHAKRAS, AMBIENT_SOUNDS, LOOP_ELEMENTS } from '@/lib/constants';
 import { getJourney } from '@/lib/journeys';
 import { getBreathingPattern } from '@/lib/breathingPatterns';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Pause, Play, Clock, Maximize2, Minimize2, Wind as WindIcon, LogOut, ChevronDown 
-} from 'lucide-react';
-import { SessionProvider, useSession } from '@/lib/sessionContext';
+import { ToastContainer, showToast } from '@/components/Toast';
+import { TimerDropdown } from '@/components/TimerDropdown';
+import { SessionLayout } from '@/components/SessionLayout';
+import { AuroraBackground } from '@/components/AuroraBackground';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { getAudioEngine } from '@/lib/audio';
+import { AudioPlayerGroup } from '@/components/AudioPlayer';
 import { useIsMobile } from '@/hooks/useMediaQuery';
 import type { Chakra } from '@/lib/types';
+
+// Dynamic imports for heavy components
+const MandalaCard = dynamic(() => import('@/components/MandalaCard').then(m => m.MandalaCard), { ssr: false });
+const AmbienceCanvas = dynamic(() => import('@/components/AmbienceCanvas').then(m => m.AmbienceCanvas), { ssr: false });
+const Sidebar = dynamic(() => import('@/components/Sidebar').then(m => m.Sidebar), { ssr: false });
+const BreathingGuide = dynamic(() => import('@/components/BreathingGuide').then(m => m.BreathingGuide), { ssr: false });
+const BreathingPicker = dynamic(() => import('@/components/BreathingPicker').then(m => m.BreathingPicker), { ssr: false });
+const SaveTemplateModal = dynamic(() => import('@/components/SaveTemplateModal').then(m => m.SaveTemplateModal), { ssr: false });
+const JourneyPlayer = dynamic(() => import('@/components/JourneyPlayer').then(m => m.JourneyPlayer), { ssr: false });
+const StartOverlay = dynamic(() => import('@/components/StartOverlay').then(m => m.StartOverlay), { ssr: false });
 
 export default function App() {
   return (
     <ErrorBoundary>
-      <SessionProvider>
-        <AyahuascaSession />
-      </SessionProvider>
+      <AyahuascaSession />
     </ErrorBoundary>
   );
 }
 
 function AyahuascaSession() {
-  const { state, dispatch } = useSession();
+  const store = useSessionStore();
   const {
-    isPlaying,
-    sessionDuration,
-    timeLeft,
-    activeChakra,
-    isChakraOn,
-    chakraVolume,
-    ambientVolumes,
-    masterVolume,
-    isMuted,
-    hasStarted,
-    isFullScreen,
-    showTimerPicker,
-    showSaveModal,
-    breathingActive,
-    savedTemplates,
-    breathingPatternId,
-    showBreathingPicker,
-    binauralState,
-    binauralVolume,
-    activeJourney,
-  } = state;
+    isPlaying, sessionDuration, timeLeft, activeChakra, isChakraOn,
+    chakraVolume, ambientVolumes, masterVolume, isMuted, hasStarted,
+    isFullScreen, showTimerPicker, showSaveModal, breathingActive,
+    savedTemplates, breathingPatternId, showBreathingPicker, 
+    binauralState, binauralVolume, activeJourney,
+
+    togglePlay, toggleFullscreen, setMasterVolume, toggleMute, 
+    setDuration, tick, setChakra, toggleChakra, setChakraVolume, 
+    setAmbientVolume, clearAllAmbients, toggleTimerPicker, 
+    toggleSaveModal, toggleBreathingGuide, setBreathingPattern, 
+    toggleBreathingPicker, setBinauralState, setBinauralVolume, 
+    startJourney, advanceJourneyPhase, journeyPhaseTick, exitJourney,
+    startExperience, addSavedTemplate, removeSavedTemplate, loadTemplate
+  } = store;
 
   const prevVolumeRef = useRef(0.7);
   const bellAudioRef = useRef<HTMLAudioElement | null>(null);
   const [isMounted, setIsMounted] = useState(false);
   const isMobile = useIsMobile(1024);
 
-  useEffect(() => { 
-    setIsMounted(true); 
-  }, []);
+  useEffect(() => { setIsMounted(true); }, []);
 
   // Keyboard Shortcuts
   useEffect(() => {
@@ -77,39 +69,32 @@ function AyahuascaSession() {
     const handler = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       switch (e.key) {
-        case ' ':
-          e.preventDefault();
-          dispatch({ type: 'TOGGLE_PLAY' });
-          break;
+        case ' ': e.preventDefault(); togglePlay(); break;
         case 'f':
-        case 'F':
-          dispatch({ type: 'TOGGLE_FULLSCREEN' });
-          break;
-        case 'Escape':
-          if (isFullScreen) dispatch({ type: 'TOGGLE_FULLSCREEN' });
-          break;
+        case 'F': toggleFullscreen(); break;
+        case 'Escape': if (isFullScreen) toggleFullscreen(); break;
         case 'm':
         case 'M':
           if (!isMuted) {
             prevVolumeRef.current = masterVolume;
-            dispatch({ type: 'SET_MASTER_VOLUME', payload: 0 });
-            dispatch({ type: 'TOGGLE_MUTE' });
+            setMasterVolume(0);
+            toggleMute();
             showToast('Volume silenciado', '🔇');
           } else {
-            dispatch({ type: 'SET_MASTER_VOLUME', payload: prevVolumeRef.current || 0.7 });
-            dispatch({ type: 'TOGGLE_MUTE' });
+            setMasterVolume(prevVolumeRef.current || 0.7);
+            toggleMute();
             showToast('Volume restaurado', '🔊');
           }
           break;
         case 'b':
-        case 'B':
-          dispatch({ type: 'TOGGLE_BREATHING_GUIDE' });
-          break;
+        case 'B': toggleBreathingGuide(); break;
+        case 'p':
+        case 'P': toggleBreathingPicker(); break;
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [hasStarted, isFullScreen, masterVolume, isMuted, dispatch]);
+  }, [hasStarted, isFullScreen, isMuted, masterVolume, togglePlay, toggleFullscreen, setMasterVolume, toggleMute, toggleBreathingGuide, toggleBreathingPicker]);
 
   // Sync Master Volume with Audio Engine
   useEffect(() => {
@@ -117,41 +102,15 @@ function AyahuascaSession() {
     if (engine) engine.setMasterVolume(masterVolume);
   }, [masterVolume]);
 
-  const handleSaveTemplate = (name: string) => {
-    if (!activeChakra) return;
-    dispatch({
-      type: 'ADD_SAVED_TEMPLATE',
-      payload: {
-        id: Date.now(),
-        name,
-        chakraId: activeChakra.id,
-        ambientVolumes,
-        chakraVolume
-      }
-    });
-    showToast('Modelo salvo com sucesso', '💾');
-  };
-
-  const loadTemplate = (template: import('@/lib/types').SavedTemplate) => {
-    dispatch({ type: 'LOAD_TEMPLATE', payload: template });
-    dispatch({ type: 'SET_DURATION', payload: sessionDuration / 60 });
-    if (!isPlaying) dispatch({ type: 'TOGGLE_PLAY' });
-    showToast(`Sessão "${template.name}" carregada`, '✨');
-  };
-
-  const deleteTemplate = (id: number | string) => {
-    dispatch({ type: 'REMOVE_SAVED_TEMPLATE', payload: String(id) });
-  };
-
+  // Main Session Timer
   useEffect(() => {
     let timer: any;
     if (isPlaying && timeLeft > 0) {
       timer = setInterval(() => {
         const newTime = timeLeft - 1;
-        dispatch({ type: 'TICK', payload: newTime });
-
+        tick(newTime);
         const elapsed = sessionDuration - newTime;
-        // Bell every 15 minutes
+        
         if (elapsed > 0 && elapsed % 900 === 0 && bellAudioRef.current) {
            bellAudioRef.current.currentTime = 0;
            bellAudioRef.current.volume = 0.6;
@@ -159,7 +118,7 @@ function AyahuascaSession() {
         }
 
         if (newTime <= 0) {
-          dispatch({ type: 'TOGGLE_PLAY' });
+          togglePlay();
           showToast('Sessão concluída. Namastê 🙏', '🔔');
           if (bellAudioRef.current) {
             bellAudioRef.current.currentTime = 0;
@@ -170,13 +129,14 @@ function AyahuascaSession() {
       }, 1000);
     }
     return () => clearInterval(timer);
-  }, [isPlaying, timeLeft, sessionDuration, dispatch]);
+  }, [isPlaying, timeLeft, sessionDuration, tick, togglePlay]);
 
+  // Audio Engine Control
   useEffect(() => {
     const engine = getAudioEngine();
     if (!engine || !hasStarted || !activeChakra) return;
     
-    if (isChakraOn || Object.values(ambientVolumes).some(v => v > 0)) {
+    if (isChakraOn || Object.values(ambientVolumes).some(v => (v as number) > 0)) {
       engine.init();
       engine.resume();
     }
@@ -189,7 +149,7 @@ function AyahuascaSession() {
     }
   }, [isChakraOn, activeChakra, chakraVolume, ambientVolumes, isPlaying, hasStarted]);
 
-  // ===== Binaural Beats Sync =====
+  // Binaural Beats Sync
   useEffect(() => {
     const engine = getAudioEngine();
     if (!engine || !hasStarted) return;
@@ -202,7 +162,7 @@ function AyahuascaSession() {
     }
   }, [binauralState, binauralVolume, isPlaying, hasStarted]);
 
-  // ===== Journey Phase Timer =====
+  // Journey Phase Timer
   useEffect(() => {
     if (!activeJourney || !isPlaying) return;
 
@@ -213,85 +173,70 @@ function AyahuascaSession() {
       const newPhaseTime = activeJourney.phaseTimeLeft - 1;
 
       if (newPhaseTime <= 0) {
-        // Advance to next phase
         const nextIndex = activeJourney.currentPhaseIndex + 1;
         if (nextIndex >= journey.phases.length) {
-          // Journey complete
-          dispatch({ type: 'EXIT_JOURNEY' });
+          exitJourney();
           showToast('Jornada concluída! Namastê 🙏', '✨');
           return;
         }
 
         const nextPhase = journey.phases[nextIndex];
-        const nextChakra = (CHAKRAS as Chakra[]).find(c => c.id === nextPhase.chakraId);
-        if (nextChakra) {
-          dispatch({
-            type: 'ADVANCE_JOURNEY_PHASE',
-            payload: {
-              phaseIndex: nextIndex,
-              chakra: nextChakra,
-              ambientVolumes: nextPhase.ambientVolumes,
-              chakraVolume: nextPhase.chakraVolume,
-              breathPatternId: nextPhase.breathPatternId,
-              phaseTimeLeft: nextPhase.duration,
-            }
-          });
-          showToast(nextPhase.message, journey.emoji);
-        }
+        const nextChakra = (CHAKRAS as Chakra[]).find(c => c.id === nextPhase.chakraId) || (CHAKRAS as Chakra[])[3];
+        
+        advanceJourneyPhase({
+          phaseIndex: nextIndex,
+          chakra: nextChakra,
+          ambientVolumes: nextPhase.ambientVolumes,
+          chakraVolume: nextPhase.chakraVolume,
+          breathPatternId: nextPhase.breathPatternId,
+          phaseTimeLeft: nextPhase.duration,
+        });
+        showToast(nextPhase.message, journey.emoji);
       } else {
-        dispatch({ type: 'JOURNEY_PHASE_TICK', payload: newPhaseTime });
+        journeyPhaseTick(newPhaseTime);
       }
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [activeJourney, isPlaying, dispatch]);
+  }, [activeJourney, isPlaying, exitJourney, advanceJourneyPhase, journeyPhaseTick]);
 
-  // ===== Journey Start Handler =====
+  const handleStartExperience = useCallback(() => {
+    const engine = getAudioEngine();
+    if (engine) {
+      engine.init();
+      engine.resume();
+      engine.setMasterVolume(masterVolume);
+    }
+    startExperience();
+  }, [masterVolume, startExperience]);
+
   const handleStartJourney = useCallback((journeyId: string) => {
     const journey = getJourney(journeyId);
     if (!journey) return;
-
     const firstPhase = journey.phases[0];
-    const firstChakra = (CHAKRAS as Chakra[]).find(c => c.id === firstPhase.chakraId);
-    if (!firstChakra) return;
+    const firstChakra = (CHAKRAS as Chakra[]).find(c => c.id === firstPhase.chakraId) || (CHAKRAS as Chakra[])[3];
 
-    // Set the session duration to match journey total
-    dispatch({ type: 'SET_DURATION', payload: Math.ceil(journey.totalDuration / 60) });
-
-    // Start journey tracking
-    dispatch({
-      type: 'START_JOURNEY',
-      payload: {
-        journeyId,
-        currentPhaseIndex: 0,
-        phaseTimeLeft: firstPhase.duration,
-        totalPhasesCount: journey.phases.length,
-      }
+    setDuration(Math.ceil(journey.totalDuration / 60));
+    startJourney({
+      journeyId,
+      currentPhaseIndex: 0,
+      phaseTimeLeft: firstPhase.duration,
+      totalPhasesCount: journey.phases.length,
     });
 
-    // Apply first phase
-    dispatch({
-      type: 'ADVANCE_JOURNEY_PHASE',
-      payload: {
-        phaseIndex: 0,
-        chakra: firstChakra,
-        ambientVolumes: firstPhase.ambientVolumes,
-        chakraVolume: firstPhase.chakraVolume,
-        breathPatternId: firstPhase.breathPatternId,
-        phaseTimeLeft: firstPhase.duration,
-      }
+    advanceJourneyPhase({
+      phaseIndex: 0,
+      chakra: firstChakra,
+      ambientVolumes: firstPhase.ambientVolumes,
+      chakraVolume: firstPhase.chakraVolume,
+      breathPatternId: firstPhase.breathPatternId,
+      phaseTimeLeft: firstPhase.duration,
     });
 
-    // Enable breathing if pattern set
-    if (firstPhase.breathPatternId && !breathingActive) {
-      dispatch({ type: 'TOGGLE_BREATHING_GUIDE' });
-    }
-
-    // Start playing
-    if (!isPlaying) dispatch({ type: 'TOGGLE_PLAY' });
-
+    if (firstPhase.breathPatternId && !breathingActive) toggleBreathingGuide();
+    if (!isPlaying) togglePlay();
     showToast(`Jornada "${journey.name}" iniciada`, journey.emoji);
-  }, [dispatch, breathingActive, isPlaying]);
+  }, [breathingActive, isPlaying, setDuration, startJourney, advanceJourneyPhase, toggleBreathingGuide, togglePlay]);
 
   const handleAdvanceJourneyPhase = useCallback(() => {
     if (!activeJourney) return;
@@ -300,61 +245,65 @@ function AyahuascaSession() {
 
     const nextIndex = activeJourney.currentPhaseIndex + 1;
     if (nextIndex >= journey.phases.length) {
-      dispatch({ type: 'EXIT_JOURNEY' });
+      exitJourney();
       showToast('Jornada concluída! Namastê 🙏', '✨');
       return;
     }
 
     const nextPhase = journey.phases[nextIndex];
-    const nextChakra = (CHAKRAS as Chakra[]).find(c => c.id === nextPhase.chakraId);
-    if (nextChakra) {
-      dispatch({
-        type: 'ADVANCE_JOURNEY_PHASE',
-        payload: {
-          phaseIndex: nextIndex,
-          chakra: nextChakra,
-          ambientVolumes: nextPhase.ambientVolumes,
-          chakraVolume: nextPhase.chakraVolume,
-          breathPatternId: nextPhase.breathPatternId,
-          phaseTimeLeft: nextPhase.duration,
-        }
-      });
-      showToast(nextPhase.message, journey.emoji);
-    }
-  }, [activeJourney, dispatch]);
+    const nextChakra = (CHAKRAS as Chakra[]).find(c => c.id === nextPhase.chakraId) || (CHAKRAS as Chakra[])[3];
+    
+    advanceJourneyPhase({
+      phaseIndex: nextIndex,
+      chakra: nextChakra,
+      ambientVolumes: nextPhase.ambientVolumes,
+      chakraVolume: nextPhase.chakraVolume,
+      breathPatternId: nextPhase.breathPatternId,
+      phaseTimeLeft: nextPhase.duration,
+    });
+    showToast(nextPhase.message, journey.emoji);
+  }, [activeJourney, exitJourney, advanceJourneyPhase]);
 
-  const handleExitJourney = useCallback(() => {
-    dispatch({ type: 'EXIT_JOURNEY' });
-    showToast('Jornada encerrada', '🛑');
-  }, [dispatch]);
-
-  const startExperience = () => {
-    const engine = getAudioEngine();
-    if (engine) {
-      engine.init();
-      engine.resume();
-      engine.setMasterVolume(masterVolume);
-    }
-    dispatch({ type: 'START_EXPERIENCE' });
-  };
-
-  const exitExperience = () => {
+  const handleExitExperience = useCallback(() => {
     const engine = getAudioEngine();
     if (engine) {
       engine.stopChakra();
       engine.stopBinaural();
     }
-    if (isPlaying) dispatch({ type: 'TOGGLE_PLAY' });
-    dispatch({ type: 'CLEAR_ALL_AMBIENTS' });
-    dispatch({ type: 'EXIT_JOURNEY' });
-    dispatch({ type: 'SET_BINAURAL_STATE', payload: 'off' });
-    dispatch({ type: 'SET_DURATION', payload: sessionDuration / 60 });
-    if (isFullScreen) dispatch({ type: 'TOGGLE_FULLSCREEN' });
-    if (breathingActive) dispatch({ type: 'TOGGLE_BREATHING_GUIDE' });
+    if (isPlaying) togglePlay();
+    clearAllAmbients();
+    exitJourney();
+    setBinauralState('off');
+    setDuration(sessionDuration / 60);
+    if (isFullScreen) toggleFullscreen();
+    if (breathingActive) toggleBreathingGuide();
     window.location.reload();
-  };
+  }, [isPlaying, isFullScreen, breathingActive, sessionDuration, togglePlay, clearAllAmbients, exitJourney, setBinauralState, setDuration, toggleFullscreen, toggleBreathingGuide]);
 
-  const activeElementIcons = AMBIENT_SOUNDS.filter(el => (ambientVolumes[el.id] || 0) > 0);
+  const handleSaveTemplate = useCallback((name: string) => {
+    if (!activeChakra) return;
+    addSavedTemplate({
+      id: Date.now(),
+      name,
+      chakraId: activeChakra.id,
+      ambientVolumes,
+      chakraVolume
+    });
+    toggleSaveModal();
+    showToast('Modelo salvo com sucesso', '💾');
+  }, [activeChakra, ambientVolumes, chakraVolume, addSavedTemplate, toggleSaveModal]);
+
+  const activeElementIcons = useMemo(() => 
+    AMBIENT_SOUNDS.filter(el => (ambientVolumes[el.id] || 0) > 0),
+    [ambientVolumes]
+  );
+
+  const formatTime = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
 
   if (!activeChakra) return null;
 
@@ -362,7 +311,6 @@ function AyahuascaSession() {
     <div 
       className="min-h-screen h-screen bg-[#020202] text-white flex overflow-hidden font-sans selection:bg-white/10 relative"
       style={{
-           // @ts-ignore
            "--chakra-primary": activeChakra.palette.primary,
            "--chakra-secondary": activeChakra.palette.secondary,
            "--chakra-accent": activeChakra.palette.accent,
@@ -376,7 +324,7 @@ function AyahuascaSession() {
       />
 
       <div className="fixed inset-0 pointer-events-none z-[1]">
-        <AmbienceCanvas volumes={ambientVolumes} chakraColor={activeChakra.palette.primary} />
+        <AmbienceCanvas />
       </div>
 
       <AudioPlayerGroup 
@@ -397,23 +345,23 @@ function AyahuascaSession() {
             activeChakra={activeChakra}
             isChakraOn={isChakraOn}
             chakraVolume={chakraVolume}
-            onChakraVolumeChange={(v) => dispatch({ type: 'SET_CHAKRA_VOLUME', payload: v })}
-            onChakraToggle={(type) => { if ((type === 'on') !== isChakraOn) dispatch({ type: 'TOGGLE_CHAKRA' }) }}
-            onChakraSelect={(c) => dispatch({ type: 'SET_CHAKRA', payload: c })}
+            onChakraVolumeChange={setChakraVolume}
+            onChakraToggle={(type: 'on'|'off') => { if ((type === 'on') !== isChakraOn) toggleChakra() }}
+            onChakraSelect={setChakra}
             ambientVolumes={ambientVolumes}
-            onAmbientVolumeChange={(id, vol) => dispatch({ type: 'SET_AMBIENT_VOLUME', payload: { id, volume: vol } })}
-            onClearAll={() => { dispatch({ type: 'CLEAR_ALL_AMBIENTS' }); showToast('Ambiente limpo', '🧹'); }}
+            onAmbientVolumeChange={setAmbientVolume}
+            onClearAll={() => { clearAllAmbients(); showToast('Ambiente limpo', '🧹'); }}
             masterVolume={masterVolume}
-            onMasterVolumeChange={(v) => dispatch({ type: 'SET_MASTER_VOLUME', payload: v })}
+            onMasterVolumeChange={setMasterVolume}
             savedTemplates={savedTemplates}
-            onSaveTemplate={() => dispatch({ type: 'TOGGLE_SAVE_MODAL' })}
+            onSaveTemplate={toggleSaveModal}
             onLoadTemplate={loadTemplate}
-            onDeleteTemplate={deleteTemplate}
+            onDeleteTemplate={(id: string) => removeSavedTemplate(String(id))}
             isMobile={isMobile}
             binauralState={binauralState}
             binauralVolume={binauralVolume}
-            onBinauralStateChange={(s) => dispatch({ type: 'SET_BINAURAL_STATE', payload: s })}
-            onBinauralVolumeChange={(v) => dispatch({ type: 'SET_BINAURAL_VOLUME', payload: v })}
+            onBinauralStateChange={setBinauralState}
+            onBinauralVolumeChange={setBinauralVolume}
             onStartJourney={handleStartJourney}
             isJourneyActive={activeJourney !== null}
           />
@@ -423,13 +371,15 @@ function AyahuascaSession() {
             className="h-full w-full glass rounded-[24px] flex items-center justify-between px-4 md:px-8 relative backdrop-blur-2xl border border-white/5 shadow-xl"
           >
             <div className="relative">
-              <div 
-                 className="flex items-center gap-3 md:gap-4 group cursor-pointer select-none" 
+              <button 
+                 className="flex items-center gap-3 md:gap-4 group cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-white/20 rounded-2xl p-1" 
                  onClick={(e) => {
                    e.preventDefault();
                    e.stopPropagation();
-                   dispatch({ type: 'TOGGLE_TIMER_PICKER' });
+                   toggleTimerPicker();
                  }}
+                 aria-label="Configurações de duração da sessão"
+                 aria-expanded={showTimerPicker}
               >
                 <motion.div
                   whileHover={{ scale: 1.05 }}
@@ -438,18 +388,18 @@ function AyahuascaSession() {
                 >
                   <Clock className="w-5 h-5 md:w-6 md:h-6" />
                 </motion.div>
-                <div className="hidden md:block">
+                <div className="hidden md:block text-left">
                   <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-white/30 group-hover:text-white/50 transition-colors">Ciclo de Sessão</p>
                   <p className="text-xs font-light text-white/60 tracking-wider group-hover:text-white/80 transition-colors">Ajustar Duração</p>
                 </div>
-              </div>
+              </button>
 
               <TimerDropdown
                 isOpen={showTimerPicker}
-                onClose={() => dispatch({ type: 'TOGGLE_TIMER_PICKER' })}
+                onClose={toggleTimerPicker}
                 onSelect={(mins) => {
-                  dispatch({ type: 'SET_DURATION', payload: mins });
-                  dispatch({ type: 'TOGGLE_TIMER_PICKER' });
+                  setDuration(mins);
+                  toggleTimerPicker();
                   showToast(`Sessão definida: ${mins}m`, '⏲️');
                 }}
                 currentMinutes={sessionDuration / 60}
@@ -458,21 +408,22 @@ function AyahuascaSession() {
             </div>
 
             <div className="flex items-center gap-2 md:gap-4">
-                <div 
-                  className="text-xl md:text-3xl font-extralight tracking-[0.2em] text-white/90 font-mono cursor-pointer hover:text-white transition-colors mr-2 select-none"
+                <button 
+                  className="text-xl md:text-3xl font-extralight tracking-[0.2em] text-white/90 font-mono cursor-pointer hover:text-white transition-colors mr-2 select-none outline-none focus-visible:text-white"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    dispatch({ type: 'TOGGLE_TIMER_PICKER' });
+                    toggleTimerPicker();
                   }}
+                  aria-label={`Tempo restante: ${formatTime(timeLeft)}`}
                 >
                   {formatTime(timeLeft)}
-                </div>
+                </button>
 
                 <motion.button
                   whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-                  onClick={() => dispatch({ type: 'TOGGLE_FULLSCREEN' })}
-                  className="w-10 h-10 md:w-12 md:h-12 rounded-full glass border border-white/10 flex items-center justify-center group relative overflow-hidden"
+                  onClick={() => toggleFullscreen()}
+                  className="w-10 h-10 md:w-12 md:h-12 rounded-full glass border border-white/10 flex items-center justify-center group relative overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-white/40"
                   title={isFullScreen ? "Sair da Tela Cheia" : "Modo Tela Cheia"}
                   aria-label={isFullScreen ? "Sair da Tela Cheia" : "Modo Tela Cheia"}
                 >
@@ -491,17 +442,18 @@ function AyahuascaSession() {
                    whileHover={{ scale: 1.05 }}
                    whileTap={{ scale: 0.95 }}
                    onClick={() => {
-                     dispatch({ type: 'TOGGLE_BREATHING_GUIDE' });
+                     toggleBreathingGuide();
                      const pattern = getBreathingPattern(breathingPatternId);
                      showToast(!breathingActive ? `${pattern.emoji} ${pattern.name} ativado` : 'Guia desativado', !breathingActive ? '🌬️' : '💨');
                    }}
-                   className={`flex w-9 h-9 md:w-11 md:h-11 rounded-2xl border items-center justify-center transition-all ${
+                   className={`flex w-9 h-9 md:w-11 md:h-11 rounded-2xl border items-center justify-center transition-all outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
                      breathingActive
                        ? 'bg-white/10 border-white/30 text-white/80'
                        : 'bg-white/5 border-white/10 text-white/30 hover:text-white/60'
                    }`}
                    title="Alternar Guia de Respiração (B)"
                    aria-label="Alternar Guia de Respiração"
+                   aria-pressed={breathingActive}
                  >
                    <WindIcon className="w-4 h-4 md:w-5 md:h-5" />
                  </motion.button>
@@ -509,8 +461,8 @@ function AyahuascaSession() {
                  <motion.button
                    whileHover={{ scale: 1.05 }}
                    whileTap={{ scale: 0.95 }}
-                   onClick={() => dispatch({ type: 'TOGGLE_BREATHING_PICKER' })}
-                   className={`flex w-6 h-9 md:w-7 md:h-11 rounded-xl border items-center justify-center transition-all bg-white/5 border-white/10 text-white/20 hover:text-white/50 hover:bg-white/10`}
+                   onClick={toggleBreathingPicker}
+                   className={`flex w-6 h-9 md:w-7 md:h-11 rounded-xl border items-center justify-center transition-all bg-white/5 border-white/10 text-white/20 hover:text-white/50 hover:bg-white/10 outline-none focus-visible:ring-2 focus-visible:ring-white/20`}
                    title="Escolher técnica de respiração"
                  >
                    <ChevronDown className="w-3.5 h-3.5" />
@@ -522,13 +474,13 @@ function AyahuascaSession() {
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
-                onClick={() => dispatch({ type: 'TOGGLE_PLAY' })}
-                className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center transition-all shadow-lg ${
+                onClick={togglePlay}
+                className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center transition-all shadow-lg outline-none focus-visible:ring-4 focus-visible:ring-white/20 ${
                   isPlaying 
                     ? 'bg-white/10 border border-white/20' 
                     : 'bg-white text-black border border-white shadow-[0_0_30px_rgba(255,255,255,0.3)]'
                 }`}
-                aria-label={isPlaying ? 'Pausar' : 'Iniciar'}
+                aria-label={isPlaying ? 'Pausar meditação' : 'Iniciar meditação'}
               >
                 <AnimatePresence mode="wait">
                   {isPlaying ? (
@@ -537,6 +489,19 @@ function AyahuascaSession() {
                     <motion.div key="play" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}><Play className="w-5 md:w-6 h-5 md:h-6 text-black fill-black ml-0.5" /></motion.div>
                   )}
                 </AnimatePresence>
+              </motion.button>
+
+              <div className="w-px h-8 bg-white/10 hidden md:block mx-1" />
+
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={handleExitExperience}
+                className="w-10 h-10 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all bg-white/5 border border-white/10 text-white/20 hover:text-red-400 hover:bg-white/10 hover:border-red-400/30 outline-none focus-visible:ring-2 focus-visible:ring-red-400/40"
+                title="Sair da Sessão"
+                aria-label="Sair da Sessão"
+              >
+                <LogOut className="w-4 h-4 md:w-5 md:h-5" />
               </motion.button>
             </div>
           </motion.header>
@@ -551,7 +516,7 @@ function AyahuascaSession() {
               chakraPalette={activeChakra.palette}
               ambientVolumes={ambientVolumes}
               isFullScreen={isFullScreen}
-              onToggleFullScreen={() => dispatch({ type: 'TOGGLE_FULLSCREEN' })}
+              onToggleFullScreen={toggleFullscreen}
             >
               <AnimatePresence>
                 {activeJourney && (
@@ -560,7 +525,7 @@ function AyahuascaSession() {
                     isPlaying={isPlaying}
                     onStartJourney={handleStartJourney}
                     onAdvancePhase={handleAdvanceJourneyPhase}
-                    onExit={handleExitJourney}
+                    onExit={exitJourney}
                   />
                 )}
               </AnimatePresence>
@@ -568,7 +533,7 @@ function AyahuascaSession() {
             <BreathingGuide
               isActive={breathingActive}
               chakraColor={activeChakra.palette.primary}
-              onToggle={() => dispatch({ type: 'TOGGLE_BREATHING_GUIDE' })}
+              onToggle={toggleBreathingGuide}
               patternId={breathingPatternId}
             />
           </div>
@@ -588,7 +553,7 @@ function AyahuascaSession() {
             </span>
             <motion.button
               whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-              onClick={() => dispatch({ type: 'TOGGLE_PLAY' })}
+              onClick={togglePlay}
               className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center"
               aria-label={isPlaying ? "Pausar sessão" : "Iniciar sessão"}
             >
@@ -596,7 +561,6 @@ function AyahuascaSession() {
             </motion.button>
             {activeElementIcons.length > 0 && (
               <div className="flex items-center gap-1 pl-2 border-l border-white/10">
-                {/* @ts-ignore */}
                 {activeElementIcons.slice(0, 5).map(el => {
                   const Icon = el.icon;
                   return <Icon key={el.id} className="w-3.5 h-3.5 text-white/40" />;
@@ -609,7 +573,7 @@ function AyahuascaSession() {
             <div className={`w-2.5 h-2.5 rounded-full ${activeChakra.color} shadow-[0_0_8px_currentColor] ml-1`} />
             <motion.button
               whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-              onClick={() => dispatch({ type: 'TOGGLE_BREATHING_GUIDE' })}
+              onClick={toggleBreathingGuide}
               className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${breathingActive ? 'bg-white/15 text-white/70' : 'bg-white/5 text-white/25'}`}
               aria-label="Alternar Guia de Respiração"
             >
@@ -617,7 +581,7 @@ function AyahuascaSession() {
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-              onClick={() => dispatch({ type: 'TOGGLE_FULLSCREEN' })}
+              onClick={toggleFullscreen}
               className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/70"
               aria-label="Sair da Tela Cheia"
             >
@@ -625,7 +589,7 @@ function AyahuascaSession() {
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-              onClick={exitExperience}
+              onClick={handleExitExperience}
               className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/25 hover:text-red-400 transition-all"
               aria-label="Sair da Sessão"
             >
@@ -635,19 +599,19 @@ function AyahuascaSession() {
         )}
       </AnimatePresence>
 
-      <StartOverlay hasStarted={hasStarted} onStart={startExperience} isMounted={isMounted} />
+      <StartOverlay hasStarted={hasStarted} onStart={handleStartExperience} isMounted={isMounted} />
       
       <SaveTemplateModal
         isOpen={showSaveModal}
-        onClose={() => dispatch({ type: 'TOGGLE_SAVE_MODAL' })}
+        onClose={toggleSaveModal}
         onSave={handleSaveTemplate}
         chakraColor={activeChakra.palette.primary}
       />
       
       <BreathingPicker
         isOpen={showBreathingPicker}
-        onClose={() => dispatch({ type: 'TOGGLE_BREATHING_PICKER' })}
-        onSelect={(pattern) => dispatch({ type: 'SET_BREATHING_PATTERN', payload: pattern.id })}
+        onClose={toggleBreathingPicker}
+        onSelect={(pattern) => setBreathingPattern(pattern.id)}
         currentPatternId={breathingPatternId}
         chakraColor={activeChakra.palette.primary}
       />
@@ -655,11 +619,4 @@ function AyahuascaSession() {
       <ToastContainer />
     </div>
   );
-}
-
-function formatTime(seconds: number) {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }

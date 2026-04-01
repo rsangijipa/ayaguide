@@ -22,9 +22,7 @@ class AudioEngine {
   private ctx: AudioContext | null = null;
   private masterGain: GainNode | null = null;
   private chakraGain: GainNode | null = null;
-  private chakraOsc: OscillatorNode | null = null;
-  private chakraOsc2: OscillatorNode | null = null;
-  private chakraOsc3: OscillatorNode | null = null;
+  private chakraOscs: OscillatorNode[] = [];
   private lfoOsc: OscillatorNode | null = null;
   private lfoGain: GainNode | null = null;
   private filterNode: BiquadFilterNode | null = null;
@@ -50,23 +48,23 @@ class AudioEngine {
   init() {
     if (this.isInitialized || typeof window === 'undefined') return;
 
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
     this.ctx = new AudioContextClass();
     
-    this.analyser = this.ctx.createAnalyser();
+    this.analyser = this.ctx!.createAnalyser();
     this.analyser.fftSize = 512;
     this.analyser.smoothingTimeConstant = 0.8;
 
-    this.masterGain = this.ctx.createGain();
+    this.masterGain = this.ctx!.createGain();
     this.masterGain.gain.value = 0.7;
     this.masterGain.connect(this.analyser);
-    this.analyser.connect(this.ctx.destination);
+    this.analyser.connect(this.ctx!.destination);
 
-    this.chakraGain = this.ctx.createGain();
+    this.chakraGain = this.ctx!.createGain();
     this.chakraGain.gain.value = 0;
     this.chakraGain.connect(this.masterGain);
 
-    this.filterNode = this.ctx.createBiquadFilter();
+    this.filterNode = this.ctx!.createBiquadFilter();
     this.filterNode.type = 'lowpass';
     this.filterNode.frequency.value = 2000;
     this.filterNode.Q.value = 1;
@@ -101,25 +99,46 @@ class AudioEngine {
 
     const baseFreq = CHAKRA_FREQUENCIES[chakraId] || 432;
     
-    // If already playing the same chakra, just update volume
-    if (this.chakraOsc && this.chakraOsc.frequency.value === baseFreq) {
+    // If already playing this frequency, just adjust volume
+    if (this.chakraOscs.length > 0 && this.chakraOscs[0].frequency.value === baseFreq) {
       this.setChakraVolume(volume);
       return;
     }
 
-    this.stopChakra(0.1); // Quick fade out before switching
+    // SMOOTH CROSSFADE: Fade out previous nodes gently
+    const prevOscs = [...this.chakraOscs];
+    if (this.lfoOsc) prevOscs.push(this.lfoOsc);
+    
+    this.chakraOscs = [];
+    this.lfoOsc = null;
 
-    this.chakraOsc = this.ctx.createOscillator();
-    this.chakraOsc.type = 'sine';
-    this.chakraOsc.frequency.value = baseFreq;
+    if (prevOscs.length > 0) {
+      const fadeOutTime = 0.5;
+      const now = this.ctx.currentTime;
+      // We assume they are connected to chakraGain or filterNode
+      // To truly crossfade, we'd need multiple gain nodes. 
+      // For now, we use a quick target ramp for the main gain before swapping content.
+      this.chakraGain!.gain.setTargetAtTime(0, now, 0.1);
+      
+      setTimeout(() => {
+        prevOscs.forEach(osc => {
+          try { osc.stop(); osc.disconnect(); } catch {}
+        });
+      }, fadeOutTime * 1000);
+    }
 
-    this.chakraOsc2 = this.ctx.createOscillator();
-    this.chakraOsc2.type = 'triangle';
-    this.chakraOsc2.frequency.value = baseFreq * 2;
+    // Create new nodes
+    const osc1 = this.ctx.createOscillator();
+    osc1.type = 'sine';
+    osc1.frequency.value = baseFreq;
 
-    this.chakraOsc3 = this.ctx.createOscillator();
-    this.chakraOsc3.type = 'sine';
-    this.chakraOsc3.frequency.value = baseFreq * 3;
+    const osc2 = this.ctx.createOscillator();
+    osc2.type = 'triangle';
+    osc2.frequency.value = baseFreq * 2;
+
+    const osc3 = this.ctx.createOscillator();
+    osc3.type = 'sine';
+    osc3.frequency.value = baseFreq * 3;
 
     this.lfoOsc = this.ctx.createOscillator();
     this.lfoOsc.type = 'sine';
@@ -128,76 +147,70 @@ class AudioEngine {
     this.lfoGain = this.ctx.createGain();
     this.lfoGain.gain.value = 5;
     this.lfoOsc.connect(this.lfoGain);
-    this.lfoGain.connect(this.chakraOsc.frequency);
+    this.lfoGain.connect(osc1.frequency);
 
-    const gain2 = this.ctx.createGain();
-    gain2.gain.value = 0.3;
-    const gain3 = this.ctx.createGain();
-    gain3.gain.value = 0.15;
+    const g2 = this.ctx.createGain();
+    g2.gain.value = 0.3;
+    const g3 = this.ctx.createGain();
+    g3.gain.value = 0.15;
 
-    this.chakraOsc.connect(this.filterNode!);
-    this.chakraOsc2.connect(gain2);
-    gain2.connect(this.filterNode!);
-    this.chakraOsc3.connect(gain3);
-    gain3.connect(this.filterNode!);
+    osc1.connect(this.filterNode!);
+    osc2.connect(g2); g2.connect(this.filterNode!);
+    osc3.connect(g3); g3.connect(this.filterNode!);
 
-    this.chakraOsc.start();
-    this.chakraOsc2.start();
-    this.chakraOsc3.start();
-    this.lfoOsc.start();
+    [osc1, osc2, osc3, this.lfoOsc].forEach(o => o.start());
+    this.chakraOscs = [osc1, osc2, osc3];
 
+    // Fade in
     this.setChakraVolume(volume);
   }
 
   stopChakra(fadeTime: number = 0.5) {
     if (this.chakraGain && this.ctx) {
-      this.chakraGain.gain.setTargetAtTime(0, this.ctx.currentTime, fadeTime / 3);
+      this.chakraGain.gain.setTargetAtTime(0, this.ctx.currentTime, fadeTime / 4);
     }
     
-    const oscs = [this.chakraOsc, this.chakraOsc2, this.chakraOsc3, this.lfoOsc];
-    this.chakraOsc = null;
-    this.chakraOsc2 = null;
-    this.chakraOsc3 = null;
+    const oscs = [...this.chakraOscs];
+    if (this.lfoOsc) oscs.push(this.lfoOsc);
+    
+    this.chakraOscs = [];
     this.lfoOsc = null;
 
     setTimeout(() => {
       oscs.forEach(osc => {
-        if (osc) {
-          try { osc.stop(); } catch {}
-          osc.disconnect();
-        }
+        try { osc.stop(); osc.disconnect(); } catch {}
       });
     }, fadeTime * 1000);
   }
 
   setChakraVolume(vol: number) {
     if (this.chakraGain && this.ctx) {
-      // Use linearRampToValueAtTime for more predictable volume changes
       const targetVol = vol * 0.6;
-      this.chakraGain.gain.setTargetAtTime(targetVol, this.ctx.currentTime, 0.1);
+      // 0.2s constant for smooth organic feel
+      this.chakraGain.gain.setTargetAtTime(targetVol, this.ctx.currentTime, 0.2);
     }
   }
 
   setMasterVolume(vol: number) {
     if (this.masterGain && this.ctx) {
-      this.masterGain.gain.setTargetAtTime(vol, this.ctx.currentTime, 0.1);
+      this.masterGain.gain.setTargetAtTime(vol, this.ctx.currentTime, 0.15);
     }
   }
 
   setFilterFrequency(freq: number) {
     if (this.filterNode && this.ctx) {
-      this.filterNode.frequency.setTargetAtTime(freq, this.ctx.currentTime, 0.1);
+      this.filterNode.frequency.setTargetAtTime(freq, this.ctx.currentTime, 0.3);
     }
   }
 
   connectMediaElement(el: HTMLMediaElement) {
     if (!this.ctx) this.init();
-    if (!this.ctx) return;
+    if (!this.ctx || !this.masterGain) return;
     
     if (!this.sources.has(el)) {
       try {
         const source = this.ctx.createMediaElementSource(el);
-        source.connect(this.masterGain!);
+        source.connect(this.masterGain);
         this.sources.set(el, source);
       } catch (e) {
         console.warn("Could not connect media element", e);
@@ -207,7 +220,7 @@ class AudioEngine {
 
   getFrequencyData(dataArray: Uint8Array) {
     if (this.analyser) {
-      this.analyser.getByteFrequencyData(dataArray as any);
+      this.analyser.getByteFrequencyData(dataArray);
     }
   }
 
@@ -226,89 +239,68 @@ class AudioEngine {
     const config = BINAURAL_DELTAS[stateId];
     if (!config) { this.stopBinaural(); return; }
 
-    // If same state, just update volume
     if (this.currentBinauralState === stateId && this.binauralGain) {
       this.setBinauralVolume(volume);
       return;
     }
 
-    // Stop existing
-    this.stopBinaural(0.1);
+    this.stopBinaural(0.2);
 
-    const baseFreq = config.baseFreq;
-    const delta = config.delta;
-
-    // Shared gain
+    const { baseFreq, delta } = config;
     this.binauralGain = this.ctx.createGain();
     this.binauralGain.gain.value = 0;
     this.binauralGain.connect(this.masterGain);
 
-    // Left oscillator: base frequency
     this.binauralOscL = this.ctx.createOscillator();
     this.binauralOscL.type = 'sine';
     this.binauralOscL.frequency.value = baseFreq;
 
-    this.binauralPanL = this.ctx.createStereoPanner();
-    this.binauralPanL.pan.value = -1;
-    this.binauralOscL.connect(this.binauralPanL);
-    this.binauralPanL.connect(this.binauralGain);
-
-    // Right oscillator: base + delta
     this.binauralOscR = this.ctx.createOscillator();
     this.binauralOscR.type = 'sine';
     this.binauralOscR.frequency.value = baseFreq + delta;
 
+    this.binauralPanL = this.ctx.createStereoPanner();
+    this.binauralPanL.pan.value = -1;
     this.binauralPanR = this.ctx.createStereoPanner();
     this.binauralPanR.pan.value = 1;
+
+    this.binauralOscL.connect(this.binauralPanL);
+    this.binauralPanL.connect(this.binauralGain);
     this.binauralOscR.connect(this.binauralPanR);
     this.binauralPanR.connect(this.binauralGain);
 
     this.binauralOscL.start();
     this.binauralOscR.start();
-
-    // Fade in
-    this.binauralGain.gain.setTargetAtTime(volume * 0.7, this.ctx.currentTime, 0.3);
     this.currentBinauralState = stateId;
-  }
 
-  stopBinaural(fadeTime: number = 0.5) {
-    if (this.binauralGain && this.ctx) {
-      this.binauralGain.gain.setTargetAtTime(0, this.ctx.currentTime, fadeTime / 3);
-    }
-
-    const oscs = [this.binauralOscL, this.binauralOscR];
-    const panners = [this.binauralPanL, this.binauralPanR];
-    this.binauralOscL = null;
-    this.binauralOscR = null;
-    this.binauralPanL = null;
-    this.binauralPanR = null;
-    this.currentBinauralState = 'off';
-
-    setTimeout(() => {
-      oscs.forEach(osc => {
-        if (osc) { try { osc.stop(); } catch {} osc.disconnect(); }
-      });
-      panners.forEach(p => { if (p) p.disconnect(); });
-      if (this.binauralGain) { this.binauralGain.disconnect(); this.binauralGain = null; }
-    }, fadeTime * 1000);
+    this.setBinauralVolume(volume);
   }
 
   setBinauralVolume(vol: number) {
     if (this.binauralGain && this.ctx) {
-      this.binauralGain.gain.setTargetAtTime(vol * 0.7, this.ctx.currentTime, 0.1);
+      this.binauralGain.gain.setTargetAtTime(vol * 0.4, this.ctx.currentTime, 0.3);
     }
   }
 
-  getBinauralState(): string {
-    return this.currentBinauralState;
+  stopBinaural(fadeTime: number = 0.5) {
+    if (this.binauralGain && this.ctx) {
+      this.binauralGain.gain.setTargetAtTime(0, this.ctx.currentTime, fadeTime / 4);
+    }
+    const nodes = [this.binauralOscL, this.binauralOscR, this.binauralPanL, this.binauralPanR, this.binauralGain];
+    this.binauralOscL = null; this.binauralOscR = null; 
+    this.binauralPanL = null; this.binauralPanR = null;
+    this.binauralGain = null;
+    this.currentBinauralState = 'off';
+
+    setTimeout(() => {
+      nodes.forEach(node => { if (node) try { (node as any).stop?.(); node.disconnect(); } catch {} });
+    }, fadeTime * 1000);
   }
 }
 
 let instance: AudioEngine | null = null;
 export const getAudioEngine = () => {
   if (typeof window === 'undefined') return null;
-  if (!instance) {
-    instance = new AudioEngine();
-  }
+  if (!instance) instance = new AudioEngine();
   return instance;
 };

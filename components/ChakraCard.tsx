@@ -50,11 +50,13 @@ export function ChakraCard({ chakra, isActive, volume, onVolumeChange, onToggle,
           
           <button 
              onClick={() => onToggle(isActive ? 'off' : 'on')}
-             className={`p-2.5 rounded-xl transition-all ${
+             className={`p-2.5 rounded-xl transition-all focus-visible:ring-2 focus-visible:ring-white/40 outline-none ${
                isActive 
                  ? 'bg-white text-black shadow-lg scale-110' 
                  : 'bg-white/5 text-white/40 hover:text-white hover:bg-white/20'
              }`}
+             aria-label={isActive ? `Desativar chakra ${chakra.name}` : `Ativar chakra ${chakra.name}`}
+             aria-pressed={isActive}
           >
             <Power className={`w-3.5 h-3.5 ${isActive ? 'fill-current' : ''}`} />
           </button>
@@ -82,6 +84,7 @@ export function ChakraCard({ chakra, isActive, volume, onVolumeChange, onToggle,
                   value={volume}
                   onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
                   className="absolute inset-x-0 w-full opacity-0 z-20 cursor-pointer h-5 -top-2"
+                  aria-label={`Volume do chakra ${chakra.name}`}
                 />
                 <motion.div 
                   initial={false}

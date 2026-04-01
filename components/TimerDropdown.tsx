@@ -59,7 +59,6 @@ export function TimerDropdown({
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log("Button clicked for:", preset.label);
                     onSelect(minutes);
                     onClose();
                   }}
@@ -68,6 +67,7 @@ export function TimerDropdown({
                       ? 'bg-white/10 text-white' 
                       : 'text-white/40 hover:bg-white/5 hover:text-white/80'
                   }`}
+                  aria-label={`Definir timer para ${preset.label}`}
                 >
                   <div className="flex items-center gap-3 relative z-10">
                     <Clock className={`h-3.5 w-3.5 ${isSelected ? 'text-white/80' : 'text-white/20 group-hover:text-white/40'}`} />
@@ -98,7 +98,6 @@ export function TimerDropdown({
             })}
           </div>
           
-          {/* Bottom Accent */}
           <div 
             className="h-1 w-full opacity-30"
             style={{ backgroundColor: chakraColor }}
