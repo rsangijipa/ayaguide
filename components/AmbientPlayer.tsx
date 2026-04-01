@@ -9,6 +9,8 @@
 
 import { useEffect, useRef } from "react";
 import { getAudioMixer } from "@/lib/audioMixer";
+import { useSessionStore } from "@/lib/store";
+import { useShallow } from "zustand/react/shallow";
 
 export interface AmbientElement {
   id: string;
@@ -23,11 +25,18 @@ interface AmbientPlayerGroupProps {
 }
 
 export function AmbientPlayerGroup({ elements, volumes, isPlaying }: AmbientPlayerGroupProps) {
+  const { qualityMode } = useSessionStore(
+    useShallow((s) => ({
+      qualityMode: s.qualityMode,
+    }))
+  );
+
   const prevIsPlaying = useRef(isPlaying);
   const prevVolumes = useRef<Record<string, number>>({});
 
   // 1 — React to global play / pause
   useEffect(() => {
+    if (qualityMode === 'minimal') return;
     const mixer = getAudioMixer();
     if (!mixer) return;
 
@@ -39,7 +48,7 @@ export function AmbientPlayerGroup({ elements, volumes, isPlaying }: AmbientPlay
     }
 
     prevIsPlaying.current = isPlaying;
-  }, [isPlaying]);
+  }, [isPlaying, qualityMode]);
 
   // 2 — React to individual volume changes
   useEffect(() => {
@@ -56,7 +65,7 @@ export function AmbientPlayerGroup({ elements, volumes, isPlaying }: AmbientPlay
         prevVolumes.current[el.id] = vol;
       }
     }
-  }, [volumes, elements, isPlaying]);
+  }, [volumes, elements, isPlaying, qualityMode]);
 
   // 3 — Cleanup on unmount
   useEffect(() => {

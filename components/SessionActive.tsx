@@ -155,9 +155,10 @@ export function SessionActive({ onExit, handleStartJourney, handleSaveTemplate }
     savedTemplates: s.savedTemplates,
     breathingPatternId: s.breathingPatternId,
     showBreathingPicker: s.showBreathingPicker,
+    focusLevel: s.focusLevel,
+    activeJourney: s.activeJourney,
     binauralState: s.binauralState,
     binauralVolume: s.binauralVolume,
-    activeJourney: s.activeJourney,
   })));
 
   const {
@@ -180,6 +181,7 @@ export function SessionActive({ onExit, handleStartJourney, handleSaveTemplate }
     exitJourney,
     removeSavedTemplate,
     loadTemplate,
+    setFocusLevel,
   } = useSessionStore(useShallow(s => ({
     togglePlay: s.togglePlay,
     toggleFullscreen: s.toggleFullscreen,
@@ -200,12 +202,13 @@ export function SessionActive({ onExit, handleStartJourney, handleSaveTemplate }
     exitJourney: s.exitJourney,
     removeSavedTemplate: s.removeSavedTemplate,
     loadTemplate: s.loadTemplate,
+    setFocusLevel: s.setFocusLevel,
   })));
 
   const {
     activeChakra, isChakraOn, chakraVolume, ambientVolumes, masterVolume, isFullScreen,
     showTimerPicker, showSaveModal, breathingActive, savedTemplates, breathingPatternId,
-    showBreathingPicker, binauralState, binauralVolume, activeJourney
+    showBreathingPicker, binauralState, binauralVolume, activeJourney, focusLevel
   } = state;
 
   const isMobile = useIsMobile(1024);
@@ -296,6 +299,8 @@ export function SessionActive({ onExit, handleStartJourney, handleSaveTemplate }
             onBinauralVolumeChange={setBinauralVolume}
             onStartJourney={handleStartJourney}
             isJourneyActive={activeJourney !== null}
+            focusLevel={focusLevel}
+            onFocusLevelChange={setFocusLevel}
           />
         }
         header={

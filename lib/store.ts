@@ -34,6 +34,7 @@ interface AudioSlice {
   isMuted: boolean;
   binauralState: BinauralState;
   binauralVolume: number;
+  focusLevel: number;
   setChakra: (chakra: Chakra) => void;
   toggleChakra: () => void;
   setChakraVolume: (vol: number) => void;
@@ -44,6 +45,7 @@ interface AudioSlice {
   clearAllAmbients: () => void;
   setBinauralState: (state: BinauralState) => void;
   setBinauralVolume: (vol: number) => void;
+  setFocusLevel: (level: number) => void;
 }
 
 interface UISlice {
@@ -54,6 +56,7 @@ interface UISlice {
   showBreathingPicker: boolean;
   savedTemplates: SavedTemplate[];
   isSidebarExpanded: boolean;
+  qualityMode: 'full' | 'minimal';
   toggleTimerPicker: () => void;
   toggleSaveModal: () => void;
   toggleBreathingGuide: () => void;
@@ -64,6 +67,7 @@ interface UISlice {
   setSavedTemplates: (templates: SavedTemplate[]) => void;
   loadTemplate: (template: SavedTemplate) => void;
   setSidebarExpanded: (expanded: boolean) => void;
+  setQualityMode: (mode: 'full' | 'minimal') => void;
 }
 
 interface JourneySlice {
@@ -103,6 +107,7 @@ const initialAudioState = {
   isMuted: false,
   binauralState: 'off' as BinauralState,
   binauralVolume: 0.5,
+  focusLevel: 0,
 };
 
 const initialUIState = {
@@ -113,6 +118,7 @@ const initialUIState = {
   showBreathingPicker: false,
   savedTemplates: [] as SavedTemplate[],
   isSidebarExpanded: false,
+  qualityMode: 'full' as const,
 };
 
 // --- SLICE CREATORS ---
@@ -159,6 +165,12 @@ const createAudioSlice: StateCreator<SessionStore, [], [], AudioSlice> = (set) =
   clearAllAmbients: () => set(() => ({ ambientVolumes: {}, isChakraOn: false })),
   setBinauralState: (bState) => set(() => ({ binauralState: bState })),
   setBinauralVolume: (vol) => set(() => ({ binauralVolume: vol })),
+  setFocusLevel: (level) => {
+    const { getAudioEngine } = require('./audioMixer');
+    const mixer = getAudioEngine();
+    if (mixer) mixer.setFocus(level);
+    set(() => ({ focusLevel: level }));
+  },
 });
 
 const createUISlice: StateCreator<SessionStore, [], [], UISlice> = (set) => ({
@@ -185,6 +197,7 @@ const createUISlice: StateCreator<SessionStore, [], [], UISlice> = (set) => ({
     }));
   },
   setSidebarExpanded: (expanded) => set(() => ({ isSidebarExpanded: expanded })),
+  setQualityMode: (mode) => set(() => ({ qualityMode: mode })),
 });
 
 const createJourneySlice: StateCreator<SessionStore, [], [], JourneySlice> = (set) => ({
@@ -233,6 +246,8 @@ export const useSessionStore = create<SessionStore>()(
         binauralVolume: state.binauralVolume,
         breathingPatternId: state.breathingPatternId,
         isSidebarExpanded: state.isSidebarExpanded,
+        qualityMode: state.qualityMode,
+        focusLevel: state.focusLevel,
       }),
     }
   )

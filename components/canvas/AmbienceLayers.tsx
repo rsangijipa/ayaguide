@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
+import { useSessionStore } from '@/lib/store';
+import { useShallow } from 'zustand/react/shallow';
 
 // Common Types
 export interface BGParticle {
@@ -42,6 +44,11 @@ interface LayerProps {
 
 // 1. ELEMENTAL LAYER (Fire, Lava, Embers)
 export const ElementalLayer = React.memo(function ElementalLayer({ register, unregister }: LayerProps) {
+  const { qualityMode } = useSessionStore(
+    useShallow((s) => ({
+      qualityMode: s.qualityMode,
+    }))
+  );
   const particles = useRef<{ fire: BGParticle[], embers: BGParticle[] }>({ fire: [], embers: [] });
   const glowCache = useRef<HTMLCanvasElement | null>(null);
 
@@ -77,6 +84,7 @@ export const ElementalLayer = React.memo(function ElementalLayer({ register, unr
     }
 
     const draw: DrawFunction = (ctx, w, h, t, v) => {
+      if (qualityMode === 'minimal') return;
       const firev = (v.fire || 0) * 1.2 + (v.lava || 0) * 0.8;
       if (firev > 0.04) {
         ctx.save();
@@ -108,6 +116,11 @@ export const ElementalLayer = React.memo(function ElementalLayer({ register, unr
 
 // 2. WATER LAYER (Rain, Waves, Bubbles)
 export const WaterLayer = React.memo(function WaterLayer({ register, unregister }: LayerProps) {
+  const { qualityMode } = useSessionStore(
+    useShallow((s) => ({
+      qualityMode: s.qualityMode,
+    }))
+  );
   const particles = useRef<{ rain: BGParticle[], waves: BGParticle[], bubbles: BGParticle[] }>({ rain: [], waves: [], bubbles: [] });
 
   useEffect(() => {
@@ -126,6 +139,7 @@ export const WaterLayer = React.memo(function WaterLayer({ register, unregister 
     }
 
     const draw: DrawFunction = (ctx, w, h, t, v, cc) => {
+      if (qualityMode === 'minimal') return;
       const wv = (v.water || 0) + (v.rain || 0) * 0.5 + (v.waves || 0) * 0.5;
       if (wv > 0.04) {
         ctx.save();
@@ -154,6 +168,11 @@ export const WaterLayer = React.memo(function WaterLayer({ register, unregister 
 
 // 3. WIND LAYER (Leaves, Clouds)
 export const WindLayer = React.memo(function WindLayer({ register, unregister }: LayerProps) {
+  const { qualityMode } = useSessionStore(
+    useShallow((s) => ({
+      qualityMode: s.qualityMode,
+    }))
+  );
   const particles = useRef<{ leaves: BGParticle[], clouds: BGParticle[] }>({ leaves: [], clouds: [] });
 
   useEffect(() => {
@@ -169,6 +188,7 @@ export const WindLayer = React.memo(function WindLayer({ register, unregister }:
     }
 
     const draw: DrawFunction = (ctx, w, h, t, v, cc) => {
+      if (qualityMode === 'minimal') return;
       const windv = (v.wind || 0) + (v.clouds || 0) * 0.4;
       if (windv > 0.04) {
         ctx.save();
@@ -189,6 +209,11 @@ export const WindLayer = React.memo(function WindLayer({ register, unregister }:
 
 // 4. NATURE LAYER (Birds, Petals)
 export const NatureLayer = React.memo(function NatureLayer({ register, unregister }: LayerProps) {
+  const { qualityMode } = useSessionStore(
+    useShallow((s) => ({
+      qualityMode: s.qualityMode,
+    }))
+  );
   const particles = useRef<{ birds: BGParticle[], petals: BGParticle[] }>({ birds: [], petals: [] });
 
   useEffect(() => {
@@ -204,6 +229,7 @@ export const NatureLayer = React.memo(function NatureLayer({ register, unregiste
     }
 
     const draw: DrawFunction = (ctx, w, h, t, v, cc) => {
+      if (qualityMode === 'minimal') return;
       const nv = (v.birds || 0) + (v.forest || 0) * 0.6;
       if (nv > 0.04) {
         ctx.save();
@@ -223,6 +249,11 @@ export const NatureLayer = React.memo(function NatureLayer({ register, unregiste
 
 // 5. ETHEREAL LAYER (Stars)
 export const EtherealLayer = React.memo(function EtherealLayer({ register, unregister }: LayerProps) {
+  const { qualityMode } = useSessionStore(
+    useShallow((s) => ({
+      qualityMode: s.qualityMode,
+    }))
+  );
   const particles = useRef<{ stars: BGParticle[] }>({ stars: [] });
 
   useEffect(() => {
@@ -235,6 +266,7 @@ export const EtherealLayer = React.memo(function EtherealLayer({ register, unreg
     }
 
     const draw: DrawFunction = (ctx, w, h, t, v, cc) => {
+      if (qualityMode === 'minimal') return;
       const ev = (v.stars || 0) + (v.cosmos || 0) * 0.5;
       if (ev > 0.04) {
         ctx.save();

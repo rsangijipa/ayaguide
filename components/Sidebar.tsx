@@ -20,6 +20,8 @@ import { BinauralPanel } from './BinauralPanel';
 import { JourneySelector } from './JourneyPlayer';
 import { AMBIENT_ELEMENTS, AMBIENT_CATEGORIES } from '@/lib/ambientElements';
 import { CHAKRAS } from '@/lib/constants';
+import { useSessionStore } from '@/lib/store';
+import { useShallow } from 'zustand/react/shallow';
 
 import type { Chakra, SavedTemplate, BinauralState } from '@/lib/types';
 
@@ -47,6 +49,8 @@ interface SidebarProps {
   onBinauralVolumeChange: (vol: number) => void;
   onStartJourney: (journeyId: string) => void;
   isJourneyActive: boolean;
+  focusLevel: number;
+  onFocusLevelChange: (level: number) => void;
 }
 
 export const Sidebar = React.memo(function Sidebar({
@@ -73,7 +77,15 @@ export const Sidebar = React.memo(function Sidebar({
   onBinauralVolumeChange,
   onStartJourney,
   isJourneyActive,
+  focusLevel,
+  onFocusLevelChange,
 }: SidebarProps) {
+  const { qualityMode } = useSessionStore(
+    useShallow((s) => ({
+      qualityMode: s.qualityMode,
+    }))
+  );
+
   const [expandedSection, setExpandedSection] = useState<'chakras' | 'elements' | 'templates' | 'binaural' | 'journeys' | null>(null);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [showAllElements, setShowAllElements] = useState(false);
@@ -166,6 +178,20 @@ export const Sidebar = React.memo(function Sidebar({
               style={{ left: `calc(${masterVolume * 100}% - 8px)`, backgroundColor: activeChakra.palette.primary, boxShadow: `0 0 15px ${activeChakra.palette.primary}` }}
             />
           </div>
+
+            <div className="relative group/focus h-4 flex items-center">
+              <input
+                type="range" min="0" max="1" step="0.01" value={focusLevel}
+                onChange={(e) => onFocusLevelChange(parseFloat(e.target.value))}
+                className="w-full h-0.5 bg-white/5 rounded-full appearance-none cursor-pointer accent-transparent focus:outline-none"
+                style={{ background: `linear-gradient(to right, ${activeChakra.palette.primary} ${focusLevel * 100}%, rgba(255,255,255,0.05) ${focusLevel * 100}%)` }}
+                aria-label="Filtro de oclusão"
+              />
+              <div 
+                className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border border-white/60 pointer-events-none transition-transform group-hover/focus:scale-125"
+                style={{ left: `calc(${focusLevel * 100}% - 6px)`, backgroundColor: activeChakra.palette.primary }}
+              />
+            </div>
         </div>
       </motion.div>
 

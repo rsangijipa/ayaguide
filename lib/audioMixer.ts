@@ -37,6 +37,7 @@ export const BINAURAL_DELTAS: Record<string, { delta: number; baseFreq: number; 
 interface Channel {
   buffer: AudioBuffer;
   gainNode: GainNode;
+  pannerNode: StereoPannerNode;
   source: AudioBufferSourceNode | null;
   /** wall-clock offset to resume from (seconds within buffer) */
   pauseOffset: number;
@@ -44,6 +45,8 @@ interface Channel {
   playedAt: number;
   playing: boolean;
   targetVolume: number;
+  /** for dynamic panning animation */
+  panDirection: number;
 }
 
 // ─── AudioMixer ───────────────────────────────────────────────────────────────
@@ -73,6 +76,9 @@ class AudioMixer {
   private binauralPanR: StereoPannerNode | null = null;
   private currentBinauralState: string = 'off';
 
+  private globalFilter: BiquadFilterNode | null = null;
+  private panTimer: number | null = null;
+
   private initialized = false;
 
   // ── Init ────────────────────────────────────────────────────────────────────
@@ -92,9 +98,14 @@ class AudioMixer {
     this.masterGain.connect(this.analyser);
     this.analyser.connect(this.ctx.destination);
 
+    this.globalFilter = this.ctx.createBiquadFilter();
+    this.globalFilter.type = 'lowpass';
+    this.globalFilter.frequency.value = 20000; // Open by default
+    this.globalFilter.connect(this.masterGain);
+
     this.chakraGain = this.ctx.createGain();
     this.chakraGain.gain.value = 0;
-    this.chakraGain.connect(this.masterGain);
+    this.chakraGain.connect(this.globalFilter);
 
     this.filterNode = this.ctx.createBiquadFilter();
     this.filterNode.type = 'lowpass';
@@ -111,6 +122,7 @@ class AudioMixer {
     }
 
     this.initialized = true;
+    this._startPanningAnimation();
   }
 
   private async _createReverb(): Promise<void> {
@@ -208,9 +220,20 @@ class AudioMixer {
 
       const gainNode = this.ctx.createGain();
       gainNode.gain.value = 0;
-      gainNode.connect(this.masterGain);
+      
+      const pannerNode = this.ctx.createStereoPanner();
+      // Start with a random pan for variety
+      pannerNode.pan.value = (Math.random() * 2 - 1) * 0.6;
+      
+      gainNode.connect(pannerNode);
+      pannerNode.connect(this.globalFilter!);
 
-      ch = { buffer, gainNode, source: null, pauseOffset: 0, playedAt: 0, playing: false, targetVolume: volume };
+      ch = { 
+        buffer, gainNode, pannerNode, source: null, 
+        pauseOffset: 0, playedAt: 0, playing: false, 
+        targetVolume: volume,
+        panDirection: Math.random() > 0.5 ? 1 : -1
+      };
       this.channels.set(url, ch);
     }
 
@@ -252,6 +275,10 @@ class AudioMixer {
     }
     this.channels.clear();
     this.loading.clear();
+    if (this.panTimer) {
+      window.clearInterval(this.panTimer);
+      this.panTimer = null;
+    }
   }
 
   // ── Internal channel control ────────────────────────────────────────────────
@@ -294,7 +321,42 @@ class AudioMixer {
       ch.source?.disconnect();
     } catch {}
     ch.gainNode.disconnect();
+    ch.pannerNode.disconnect();
     this.channels.delete(url);
+  }
+
+  // ── Panning & Focus ─────────────────────────────────────────────────────────
+
+  private _startPanningAnimation(): void {
+    if (this.panTimer) return;
+    
+    this.panTimer = window.setInterval(() => {
+      const now = this.ctx?.currentTime || 0;
+      for (const ch of this.channels.values()) {
+        if (!ch.playing) continue;
+
+        // Subtly shift pan
+        let newPan = ch.pannerNode.pan.value + (0.01 * ch.panDirection);
+        
+        // Bounce at limits
+        if (Math.abs(newPan) > 0.7) {
+          ch.panDirection *= -1;
+          newPan = ch.pannerNode.pan.value + (0.01 * ch.panDirection);
+        }
+        
+        ch.pannerNode.pan.setTargetAtTime(newPan, now, 0.5);
+      }
+    }, 2000);
+  }
+
+  /**
+   * Set Focus level (0 = original sound, 1 = muffled/underwater)
+   */
+  setFocus(value: number): void {
+    if (!this.globalFilter || !this.ctx) return;
+    // Map 0..1 to 20000Hz..400Hz (logarithmic-ish)
+    const freq = 20000 * Math.pow(0.02, value);
+    this.globalFilter.frequency.setTargetAtTime(freq, this.ctx.currentTime, 0.2);
   }
 
   // ── Analyser ────────────────────────────────────────────────────────────────

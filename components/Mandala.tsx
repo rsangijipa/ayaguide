@@ -9,6 +9,8 @@ import {
   emod
 } from '@/lib/mandalaSystem';
 import { getAudioEngine } from '@/lib/audio';
+import { useSessionStore } from '@/lib/store';
+import { useShallow } from 'zustand/react/shallow';
 
 interface MandalaProps {
   chakraId: string;
@@ -29,6 +31,12 @@ export function Mandala({
   isPlaying,
   chakraPalette 
 }: MandalaProps) {
+  const { qualityMode } = useSessionStore(
+    useShallow((s) => ({
+      qualityMode: s.qualityMode,
+    }))
+  );
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rotationTimeRef = useRef(0);
   const lastTimeRef = useRef(0);
@@ -209,6 +217,7 @@ export function Mandala({
   }, [core]);
 
   useEffect(() => {
+    if (qualityMode === 'minimal') return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d', { alpha: true });
@@ -218,7 +227,6 @@ export function Mandala({
       const parent = canvas.parentElement;
       if (parent) {
         ctx.setTransform(1, 0, 0, 1, 0, 0);
-        // Cap DPR to 2.0 to save GPU on high-density displays
         const dpr = Math.min(window.devicePixelRatio || 1, 2.0);
         canvas.width = parent.clientWidth * dpr;
         canvas.height = parent.clientHeight * dpr;
@@ -229,8 +237,6 @@ export function Mandala({
     };
 
     window.addEventListener('resize', resize);
-    // Use an IntersectionObserver to call resize when visible 
-    // This helps if the component was hidden initially
     const observer = new IntersectionObserver((entries) => {
       if (entries[0].isIntersecting) resize();
     });
@@ -256,6 +262,11 @@ export function Mandala({
       const time = rotationTimeRef.current;
 
       ctx.clearRect(0, 0, w, h);
+      
+      // QUALITY ENHANCEMENT: Glow effect for "neon" look
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = paletteRef.current?.primary || '#fff';
+
       const engine = getAudioEngine();
       if (isPlaying && engine) engine.getFrequencyData(audioDataRef.current);
       const bands = calculateBands(audioDataRef.current);
@@ -284,7 +295,24 @@ export function Mandala({
       observer.disconnect();
       if (rafId.current) cancelAnimationFrame(rafId.current);
     };
-  }, [drawCrown, drawHeart, drawRoot, drawSacral, drawSolar, drawThirdEye, drawThroat]);
+  }, [drawCrown, drawHeart, drawRoot, drawSacral, drawSolar, drawThirdEye, drawThroat, qualityMode]);
+
+  if (qualityMode === 'minimal') {
+    return (
+      <div className="relative w-full h-full flex items-center justify-center p-8">
+        <svg 
+          viewBox="0 0 100 100" 
+          className={`w-[80%] h-[80%] opacity-40 transition-all duration-1000 ${isPlaying ? 'animate-spin-slow' : ''}`}
+          style={{ color: chakraPalette?.primary || 'white' }}
+        >
+          <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" strokeWidth="0.5" strokeDasharray="2 2" />
+          <path d="M50 5 L55 45 L95 50 L55 55 L50 95 L45 55 L5 50 L45 45 Z" fill="currentColor" fillOpacity="0.4" />
+          <circle cx="50" cy="50" r="10" fill="currentColor" fillOpacity="0.2" />
+          <circle cx="50" cy="50" r="5" fill="currentColor" />
+        </svg>
+      </div>
+    );
+  }
 
   return (
     <div className="relative w-full h-full min-h-[inherit] flex items-center justify-center overflow-hidden">

@@ -202,6 +202,15 @@
 .delay-700 { animation-delay: 0.7s; }
 .delay-1000 { animation-delay: 1s; }
 
+/* Minimal Mandala Animation */
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-spin-slow {
+  animation: spin-slow 20s linear infinite;
+}
+
 /* Hide drag handle by default on desktop */
 .sidebar-drag-handle {
   display: none;
