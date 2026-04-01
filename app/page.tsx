@@ -74,8 +74,11 @@ function AyahuascaSession() {
 
   const prevVolumeRef = useRef(0.7);
   const bellAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+  const isMobile = useIsMobile(1024);
 
   // Return Loading Shell until hydrated to prevent flickering
+  // IMPORTANT: This must come AFTER all hook declarations (useState, useRef, useIsMobile etc)
   if (!hasHydrated) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-black/60">
@@ -89,8 +92,6 @@ function AyahuascaSession() {
       </div>
     );
   }
-  const [isMounted, setIsMounted] = useState(false);
-  const isMobile = useIsMobile(1024);
 
   // Auto-collapse sidebar on mobile when session starts
   useEffect(() => {
