@@ -1,4 +1,6 @@
 
+"use client";
+
 export const CHAKRA_FREQUENCIES: Record<string, number> = {
   root: 396,
   sacral: 417,
@@ -220,7 +222,7 @@ class AudioEngine {
 
   getFrequencyData(dataArray: Uint8Array) {
     if (this.analyser) {
-      this.analyser.getByteFrequencyData(dataArray);
+      this.analyser.getByteFrequencyData(dataArray as any);
     }
   }
 

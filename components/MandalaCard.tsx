@@ -87,7 +87,7 @@ export const MandalaCard = React.memo(function MandalaCard({
       <motion.div className="absolute inset-0 rounded-[40px] pointer-events-none" animate={{ opacity: glowIntensity * 0.2 }} transition={{ duration: 0.1 }} style={{ border: `1px solid rgba(${rgbString}, 0.1)`, boxShadow: `inset 0 0 50px rgba(${rgbString}, 0.05)` }} />
       
       {children && (
-        <div className="absolute inset-x-0 bottom-6 z-20 flex justify-center px-4 pointer-events-none">
+        <div className="absolute inset-x-0 top-8 z-20 flex justify-center px-6 pointer-events-none">
           <div className="pointer-events-auto w-full max-w-xl">
             {children}
           </div>

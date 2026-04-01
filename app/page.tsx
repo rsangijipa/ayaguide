@@ -39,7 +39,22 @@ export default function App() {
 }
 
 function AyahuascaSession() {
+  const [hasHydrated, setHasHydrated] = useState(false);
   const store = useSessionStore();
+
+  // Handle Hydration for Persisted State
+  useEffect(() => {
+    // Check if already hydrated
+    if (useSessionStore.persist.hasHydrated()) {
+      setHasHydrated(true);
+    } else {
+      const unsub = useSessionStore.persist.onFinishHydration(() => {
+        setHasHydrated(true);
+      });
+      return () => unsub();
+    }
+  }, []);
+
   const {
     isPlaying, sessionDuration, timeLeft, activeChakra, isChakraOn,
     chakraVolume, ambientVolumes, masterVolume, isMuted, hasStarted,
@@ -59,6 +74,21 @@ function AyahuascaSession() {
 
   const prevVolumeRef = useRef(0.7);
   const bellAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Return Loading Shell until hydrated to prevent flickering
+  if (!hasHydrated) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-black/60">
+        <motion.div 
+          animate={{ opacity: [0, 1, 0] }}
+          transition={{ duration: 2, repeat: Infinity }}
+          className="text-[10px] uppercase tracking-[0.5em] text-white/20 font-bold"
+        >
+          Sincronizando Estado Sagrado...
+        </motion.div>
+      </div>
+    );
+  }
   const [isMounted, setIsMounted] = useState(false);
   const isMobile = useIsMobile(1024);
 

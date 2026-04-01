@@ -1,0 +1,17 @@
+{
+  "name": "AyaGuide | Portal de Meditação",
+  "short_name": "AyaGuide",
+  "description": "Uma experiência imersiva de meditação vibracional e terapia sonora.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#020202",
+  "theme_color": "#020202",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    }
+  ]
+}

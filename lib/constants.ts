@@ -1,6 +1,6 @@
 import { Wind as WindIcon } from 'lucide-react';
 import { AMBIENT_ELEMENTS } from './ambientElements';
-import { AudioPlayerElement } from '@/components/AudioPlayer';
+import { AudioPlayerElement } from './types';
 
 export const CHAKRAS = [
   { 

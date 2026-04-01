@@ -1,3 +1,5 @@
+"use client";
+
 import { create, StateCreator } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { 
@@ -49,7 +51,7 @@ interface UISlice {
   breathingPatternId: string;
   showBreathingPicker: boolean;
   savedTemplates: SavedTemplate[];
-  isSidebarExpanded: boolean; // New: Global sidebar state for mobile auto-collapse
+  isSidebarExpanded: boolean;
   toggleTimerPicker: () => void;
   toggleSaveModal: () => void;
   toggleBreathingGuide: () => void;
@@ -210,9 +212,8 @@ export const useSessionStore = create<SessionStore>()(
     }),
     {
       name: 'ayaguide-session-store',
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => (typeof window !== 'undefined' ? window.localStorage : dummyStorage)),
       partialize: (state) => ({
-        // Only persist these fields to avoid state conflicts on reload
         savedTemplates: state.savedTemplates,
         masterVolume: state.masterVolume,
         ambientVolumes: state.ambientVolumes,
@@ -225,3 +226,10 @@ export const useSessionStore = create<SessionStore>()(
     }
   )
 );
+
+// Helper for SSR safety
+const dummyStorage = {
+  getItem: () => null,
+  setItem: () => {},
+  removeItem: () => {},
+};

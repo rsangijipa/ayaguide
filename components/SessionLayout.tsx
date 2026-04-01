@@ -4,6 +4,7 @@ import React, { useState, useEffect, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useIsMobile } from '@/hooks/useMediaQuery';
 import { useSessionStore } from '@/lib/store';
+import { ChevronDown } from 'lucide-react';
 
 interface SessionLayoutProps {
   sidebar: ReactNode;
@@ -38,7 +39,7 @@ export function SessionLayout({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Calculate Mandala Safe Size - More conservative for perfect fit
+  // Calculate Mandala Safe Size
   const mandalaSize = isMobile
     ? Math.min(viewportSize.width - 48, viewportSize.height - 240)
     : Math.min(viewportSize.width - 480, viewportSize.height - 180);
@@ -50,19 +51,17 @@ export function SessionLayout({
         !isFullScreen ? 'flex-row p-6 gap-6' : 'p-0 w-full h-full'
       }`}
       style={{
-        // Global variables for children to use
-        // @ts-ignore
         '--mandala-size': `${mandalaSize}px`,
         '--base-scale': isMobile ? '0.8' : '1',
       } as any}
     >
-      {/* 1. Sidebar Slot (as Desktop Sidebar or Mobile Bottom Sheet) */}
+      {/* 1. Sidebar Slot */}
       <AnimatePresence mode="wait">
         {!isFullScreen && (
           <motion.div
             initial={isMobile ? { y: '100%', x: '-50%' } : { x: -400 }}
             animate={isMobile 
-              ? { x: '-50%', y: isSidebarExpanded ? 0 : 'calc(100% - 100px)' } 
+              ? { x: '-50%', y: isSidebarExpanded ? 0 : 'calc(100% - 64px)' } 
               : { x: 0 }
             }
             exit={isMobile ? { y: '100%', x: '-50%' } : { x: -400 }}
@@ -75,10 +74,35 @@ export function SessionLayout({
           >
             {isMobile && (
               <div 
-                className="w-full h-12 flex items-center justify-center cursor-pointer active:bg-white/5 transition-colors"
+                className="w-full h-16 flex flex-col items-center justify-center cursor-pointer active:bg-white/5 transition-all group"
                 onClick={() => setSidebarExpanded(!isSidebarExpanded)}
+                role="button"
+                aria-label={isSidebarExpanded ? "Recolher Biblioteca" : "Expandir Biblioteca"}
               >
-                <div className="w-12 h-1.5 rounded-full bg-white/20" />
+                <div className="flex flex-col items-center gap-1.5 transition-transform duration-500 group-hover:-translate-y-0.5">
+                  <motion.div 
+                    animate={{ 
+                      y: isSidebarExpanded ? 4 : [0, -2, 0],
+                      rotate: isSidebarExpanded ? 180 : 0
+                    }}
+                    transition={{ 
+                      y: { duration: 2, repeat: Infinity, ease: "easeInOut" },
+                      rotate: { duration: 0.5, ease: [0.16, 1, 0.3, 1] }
+                    }}
+                    className="flex flex-col items-center"
+                  >
+                    <ChevronDown className="w-5 h-5 text-white/30 group-hover:text-white/60" />
+                  </motion.div>
+                  {!isSidebarExpanded && (
+                    <motion.span 
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-[10px] uppercase tracking-[0.4em] font-bold text-white/20 group-hover:text-white/50 transition-colors"
+                    >
+                      Recursos & Biblioteca
+                    </motion.span>
+                  )}
+                </div>
               </div>
             )}
             <div className={isMobile ? 'h-full overflow-y-auto px-4 pb-12' : 'h-full'}>
@@ -106,11 +130,9 @@ export function SessionLayout({
           )}
         </AnimatePresence>
 
-        {/* Content (Mandala) Slot - Flll space */}
+        {/* Content (Mandala) Slot */}
         <div className="flex-1 min-h-0 flex items-center justify-center relative w-full h-full overflow-hidden">
-          <div 
-            className="flex flex-col items-center justify-center transition-all duration-500 w-full h-full relative"
-          >
+          <div className="flex flex-col items-center justify-center transition-all duration-500 w-full h-full relative">
             {content}
           </div>
         </div>

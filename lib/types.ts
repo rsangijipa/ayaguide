@@ -45,6 +45,13 @@ export interface ActiveJourney {
 
 export type BinauralState = 'off' | 'delta' | 'theta' | 'alpha' | 'beta' | 'gamma';
 
+export interface AudioPlayerElement {
+  id: string;
+  name: string;
+  url: string;
+  icon?: any;
+}
+
 export interface SessionState {
   isPlaying: boolean;
   sessionDuration: number;
